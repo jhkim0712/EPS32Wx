@@ -11,6 +11,7 @@
 #include "storage/spiffs_manager.h"
 #include "network/wifi_manager.h"
 #include "network/config_portal.h"
+#include "weather/weather_interface.h"
 #include "common/config.h"
 #include "common/types.h"
 
@@ -18,6 +19,37 @@ static const char* TAG = "MAIN";
 
 static app_state_t current_app_state = APP_STATE_INIT;
 static app_config_t app_config;
+
+// 날씨 응답 콜백 함수
+static void weather_response_callback(const weather_data_t *weather_data, esp_err_t result)
+{
+    if (result == ESP_OK && weather_validate_data(weather_data)) {
+        ESP_LOGI(TAG, "✅ 날씨 정보 업데이트 성공");
+        weather_log_data(weather_data);
+        
+        // TODO: 디스플레이에 날씨 정보 표시
+        // display_show_weather(weather_data);
+        
+    } else {
+        ESP_LOGE(TAG, "❌ 날씨 정보 요청 실패: %s", esp_err_to_name(result));
+    }
+}
+
+// NVS에서 설정을 로드하여 날씨 정보 요청
+static void weather_get_current_from_nvs(void)
+{
+    if (strlen(app_config.api_key) == 0 || strlen(app_config.city_name) == 0) {
+        ESP_LOGW(TAG, "API 키 또는 도시명이 설정되지 않았습니다");
+        return;
+    }
+    
+    ESP_LOGI(TAG, "🌤️ 날씨 정보 요청: %s", app_config.city_name);
+    esp_err_t err = weather_get_current(app_config.api_key, app_config.city_name, weather_response_callback);
+    
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "날씨 API 호출 실패: %s", esp_err_to_name(err));
+    }
+}
 
 // 설정 완료 콜백
 static void config_complete_callback(const app_config_t* config)
@@ -50,6 +82,9 @@ static void init_system(void)
     // WiFi 매니저 초기화
     ESP_ERROR_CHECK(wifi_manager_init());
     wifi_manager_set_event_handler(wifi_event_handler, NULL);
+    
+    // 날씨 API 초기화
+    ESP_ERROR_CHECK(weather_init(WEATHER_PROVIDER_OPENWEATHERMAP));
     
     // 설정 로드
     ESP_ERROR_CHECK(nvs_manager_load_config(&app_config));
@@ -86,10 +121,13 @@ static void start_normal_operation(void)
         current_app_state = APP_STATE_NORMAL_OPERATION;
         ESP_LOGI(TAG, "WiFi connected successfully");
         
-        // TODO: 여기서 날씨 API 모듈 시작
         ESP_LOGI(TAG, "Weather station ready!");
         ESP_LOGI(TAG, "API Key: %s", app_config.api_key[0] ? "Configured" : "Not set");
         ESP_LOGI(TAG, "City: %s", app_config.city_name);
+        
+        // 첫 번째 날씨 정보 요청 (5초 후)
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        weather_get_current_from_nvs();
         
     } else {
         ESP_LOGE(TAG, "Failed to connect to WiFi, entering config mode");
@@ -134,9 +172,11 @@ static void main_task(void* pvParameters)
                 break;
                 
             case APP_STATE_NORMAL_OPERATION:
-                // TODO: 날씨 데이터 업데이트
-                ESP_LOGI(TAG, "Weather update cycle (placeholder)");
-                vTaskDelay(pdMS_TO_TICKS(60000));  // 1분마다
+                // 주기적 날씨 데이터 업데이트 (10분마다)
+                weather_get_current_from_nvs();
+                
+                // 10분 대기 (600,000ms = 10분)
+                vTaskDelay(pdMS_TO_TICKS(UPDATE_INTERVAL_MS));
                 break;
                 
             default:

@@ -11,20 +11,6 @@ typedef struct {
     bool configured;
 } app_wifi_config_t;
 
-// 날씨 데이터 구조체
-typedef struct {
-    char city[33];
-    char description[65];
-    float temperature;
-    float feels_like;
-    int humidity;
-    int pressure;
-    float wind_speed;
-    int wind_deg;
-    char icon[4];
-    uint32_t timestamp;
-} weather_data_t;
-
 // 앱 설정 구조체
 typedef struct {
     app_wifi_config_t wifi;
