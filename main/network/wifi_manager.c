@@ -1,16 +1,21 @@
-#include "network/wifi_manager.h"
-#include "common/config.h"
-#include "esp_wifi.h"
-#include "esp_wifi_types.h"
-#include "esp_netif.h"
-#include "esp_log.h"
-#include "esp_event.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
 #include <string.h>
+#include <esp_log.h>
+#include <esp_err.h>
+#include <esp_wifi.h>
+#include <esp_event.h>
+#include <esp_netif.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/event_groups.h>
+#include <lwip/err.h>
+#include <lwip/sys.h>
 
-static const char* TAG = "WIFI_MANAGER";
+#include "wifi_manager.h"
+#include "config_portal.h"
+#include "nvs_manager.h"
+#include "../common/constants.h"
+
+static const char *TAG = LOG_TAG_WIFI;
 
 static EventGroupHandle_t wifi_event_group;
 static esp_netif_t* sta_netif = NULL;
@@ -136,16 +141,16 @@ esp_err_t wifi_manager_start_ap(void)
     
     wifi_config_t wifi_config = {
         .ap = {
-            .ssid = AP_SSID,
-            .ssid_len = strlen(AP_SSID),
+            .ssid = DEFAULT_AP_SSID,
+            .ssid_len = strlen(DEFAULT_AP_SSID),
             .channel = AP_CHANNEL,
-            .password = AP_PASSWORD,
+            .password = DEFAULT_AP_PASSWORD,
             .max_connection = AP_MAX_CONN,
             .authmode = WIFI_AUTH_WPA_WPA2_PSK
         },
     };
     
-    if (strlen(AP_PASSWORD) == 0) {
+    if (strlen(DEFAULT_AP_PASSWORD) == 0) {
         wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     }
     
@@ -153,7 +158,7 @@ esp_err_t wifi_manager_start_ap(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
     
-    ESP_LOGI(TAG, "WiFi AP started. SSID: %s, Password: %s", AP_SSID, AP_PASSWORD);
+    ESP_LOGI(TAG, "WiFi AP started. SSID: %s, Password: %s", DEFAULT_AP_SSID, DEFAULT_AP_PASSWORD);
     
     // AP 시작 대기
     xEventGroupWaitBits(wifi_event_group, WIFI_AP_START_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
@@ -203,7 +208,7 @@ esp_err_t wifi_manager_get_info(char* ssid, char* ip_addr)
         
         return ESP_OK;
     } else if (current_state == WIFI_STATE_AP_MODE) {
-        strcpy(ssid, AP_SSID);
+        strcpy(ssid, DEFAULT_AP_SSID);
         
         esp_netif_ip_info_t ip_info;
         esp_netif_get_ip_info(ap_netif, &ip_info);
@@ -242,5 +247,45 @@ esp_err_t wifi_manager_set_event_handler(esp_event_handler_t handler, void* arg)
 {
     user_event_handler = handler;
     user_event_arg = arg;
+    return ESP_OK;
+}
+
+esp_err_t wifi_manager_setup_network(void)
+{
+    esp_err_t ret = ESP_OK;
+    
+    ESP_LOGI(TAG, "Starting network setup");
+    
+    wifi_config_t wifi_config = {0};
+    if (nvs_get_wifi_config(&wifi_config) == ESP_OK) {
+        ESP_LOGI(TAG, "Attempting to connect to saved WiFi: %s", wifi_config.sta.ssid);
+        
+        ret = wifi_manager_connect_sta((char*)wifi_config.sta.ssid, (char*)wifi_config.sta.password);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "WiFi connection successful");
+            return ESP_OK;
+        } else {
+            ESP_LOGW(TAG, "WiFi connection failed, switching to AP mode");
+        }
+    } else {
+        ESP_LOGI(TAG, "No saved WiFi configuration found. Starting AP mode");
+    }
+    
+    ESP_LOGI(TAG, "Starting AP mode");
+    ret = wifi_manager_start_ap();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "AP mode startup failed");
+        return ret;
+    }
+    
+    ret = config_portal_start();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Configuration portal startup failed");
+        return ret;
+    }
+    
+    ESP_LOGI(TAG, "Configuration portal started");
+    ESP_LOGI(TAG, "Connect to WiFi '%s' and open http://192.168.4.1", DEFAULT_AP_SSID);
+    
     return ESP_OK;
 }

@@ -80,4 +80,10 @@ uint16_t wifi_manager_get_scan_results(wifi_ap_record_t* ap_info, uint16_t max_a
  */
 esp_err_t wifi_manager_set_event_handler(esp_event_handler_t handler, void* arg);
 
+/**
+ * @brief Setup network and configure web portal
+ * @return ESP_OK on success
+ */
+esp_err_t wifi_manager_setup_network(void);
+
 #endif // WIFI_MANAGER_H

@@ -57,80 +57,135 @@ ESP32 기반의 모듈화된 날씨 스테이션 프로젝트입니다. WiFi 설
 
 ```
 ESP32Wx/
-├── 📄 platformio.ini          # PlatformIO 프로젝트 설정
-├── 📄 partitions.csv          # 메모리 파티션 테이블
+├── 📄 CMakeLists.txt          # ESP-IDF 프로젝트 루트 설정
+├── 📄 partitions.csv          # 메모리 파티션 테이블 (16MB Flash)
 ├── 📄 README.md              # 프로젝트 문서 (이 파일)
+├── � sdkconfig.esp32s3       # ESP32-S3 SDK 설정
+├── �📂 docs/                   # 문서 및 이미지
+│   └── 📂 images/
+│       ├── 📂 hardware/       # 하드웨어 연결 이미지
+│       └── 📂 ui/            # UI 스크린샷
 ├── 📂 data/                   # 웹 파일 저장소
 │   └── 📄 index.html         # 설정 포털 웹페이지
-├── 📂 include/                # 헤더 파일 디렉토리
-│   ├── 📂 common/
-│   │   ├── 📄 config.h       # 전역 설정 상수
-│   │   └── 📄 types.h        # 공통 데이터 구조체
-│   ├── 📂 network/
-│   │   ├── 📄 wifi_manager.h    # WiFi 관리 인터페이스
-│   │   └── 📄 config_portal.h   # 웹 포털 인터페이스
-│   ├── 📂 storage/
-│   │   ├── 📄 nvs_manager.h     # NVS 저장소 인터페이스
-│   │   └── 📄 spiffs_manager.h  # SPIFFS 파일시스템 인터페이스
-│   ├── 📂 weather/           # 날씨 API 모듈 (향후 구현)
-│   └── 📂 display/           # 디스플레이 모듈 (향후 구현)
-└── 📂 src/                    # 소스 코드 디렉토리
-    ├── 📄 main.c             # 메인 애플리케이션 로직
-    ├── 📄 CMakeLists.txt     # 빌드 설정
+├── 📂 components/             # ESP-IDF 커스텀 컴포넌트
+│   └── 📂 lvgl/              # LVGL 9.3.0 그래픽 라이브러리
+│       ├── 📄 CMakeLists.txt # LVGL 컴포넌트 빌드 설정
+│       ├── 📄 lv_conf.h      # LVGL 설정 (512KB 메모리)
+│       └── 📂 lvgl/          # LVGL 소스 코드
+└── 📂 main/                   # 메인 애플리케이션 (ESP-IDF 표준)
+    ├── 📄 main.c             # 메인 애플리케이션 엔트리 포인트
+    ├── 📄 CMakeLists.txt     # 메인 컴포넌트 빌드 설정
+    ├── 📂 include/            # 헤더 파일 디렉토리 (ESP-IDF 표준)
+    │   ├── 📂 common/
+    │   │   ├── 📄 config.h       # 전역 설정 상수
+    │   │   └── 📄 types.h        # 공통 데이터 구조체
+    │   ├── 📂 network/
+    │   │   ├── 📄 wifi_manager.h    # WiFi 관리 인터페이스
+    │   │   └── 📄 config_portal.h   # 웹 포털 인터페이스
+    │   ├── 📂 storage/
+    │   │   ├── 📄 nvs_manager.h     # NVS 저장소 인터페이스
+    │   │   └── 📄 spiffs_manager.h  # SPIFFS 파일시스템 인터페이스
+    │   ├── 📂 ui/
+    │   │   ├── 📄 lvgl_driver.h     # LVGL 디스플레이 드라이버
+    │   │   └── � ui_app.h         # UI 애플리케이션 인터페이스
+    │   ├── 📂 weather/
+    │   │   ├── 📄 weather_interface.h    # 날씨 API 인터페이스
+    │   │   └── 📄 openweathermap_api.h   # OpenWeatherMap API
+    │   └── 📂 ota/
+    │       └── 📄 ota_manager.h        # OTA 업데이트 인터페이스
     ├── 📂 network/
     │   ├── 📄 wifi_manager.c    # WiFi 연결 및 관리
     │   └── 📄 config_portal.c   # HTTP 웹 서버 및 API
     ├── 📂 storage/
     │   ├── 📄 nvs_manager.c     # NVS 읽기/쓰기 구현
     │   └── 📄 spiffs_manager.c  # SPIFFS 파일 관리
-    ├── 📂 weather/           # 날씨 API 처리 (향후 구현)
-    └── 📂 display/           # 화면 출력 처리 (향후 구현)
+    ├── 📂 ui/                # LVGL UI 구현
+    │   ├── 📄 lvgl_driver.c  # 디스플레이 드라이버 (ST7796)
+    │   └── 📄 ui_app.c       # UI 애플리케이션
+    ├── 📂 weather/           # 날씨 API 처리
+    │   ├── 📄 weather_interface.c    # 날씨 데이터 처리
+    │   └── 📄 openweathermap_api.c   # OpenWeatherMap API 구현
+    └── 📂 ota/              # OTA 업데이트 관리
+        └── 📄 ota_manager.c     # OTA 업데이트 구현
 ```
 
 ## 🔧 하드웨어 요구사항
 
-- **ESP32-S3-Box** (또는 호환 ESP32-S3 보드)
-- **최소 16MB Flash 메모리**
-- **320KB RAM**
-- **WiFi 안테나**
-- **디스플레이** (ESP32-S3-Box 내장)
+### 🎯 **개발 보드: WT32-SC01-PLUS**
+- **SoC**: WT32-S3-WROVER-N16R2 (ESP32-S3 기반)
+- **Flash**: 16MB (QIO 모드)
+- **PSRAM**: 2MB (QIO 모드)
+- **디스플레이**: 3.5" TFT LCD 320×480 (ST7796 컨트롤러)
+- **터치**: I2C 터치 패널 (FT6236 컨트롤러)
+- **WiFi**: IEEE 802.11 b/g/n (2.4 GHz)
+
+### 📋 **최소 시스템 요구사항**
+- **Flash 메모리**: 최소 8MB (권장 16MB)
+- **RAM**: 최소 512KB (PSRAM 포함)
+- **WiFi 안테나**: 내장 또는 외장
 
 ## 💻 소프트웨어 요구사항
 
-- **PlatformIO Core** >= 6.0
-- **ESP-IDF Framework** >= 5.4.1
-- **Python** >= 3.7 (PlatformIO용)
+- **ESP-IDF Framework** >= 5.0 (권장 5.1+)
+- **VS Code** + **ESP-IDF Extension**
+- **Python** >= 3.8 (ESP-IDF용)
+- **Git** (소스 코드 관리용)
 
-### 필수 ESP-IDF 컴포넌트
-- `nvs_flash` - 설정 저장
-- `esp_wifi` - WiFi 기능
-- `esp_netif` - 네트워크 인터페이스
-- `esp_http_server` - 웹 서버
-- `spiffs` - 파일 시스템
+### 🔧 **ESP-IDF 컴포넌트 의존성**
+- `nvs_flash` - 설정 저장 (WiFi 자격증명, API 키)
+- `esp_wifi` - WiFi STA/AP 기능
+- `esp_netif` - 네트워크 인터페이스 관리
+- `esp_http_server` - 웹 설정 포털
+- `esp_http_client` - HTTP API 호출
+- `esp_tls` - HTTPS 보안 통신
+- `spiffs` - 웹 파일 시스템
 - `json` - JSON 파싱 (cJSON)
+- `esp_lcd` - 디스플레이 드라이버
+- `app_update` - OTA 업데이트
+- `mbedtls` - TLS/SSL 암호화
 
 ## 🚀 설치 및 빌드
 
-### 1. 저장소 클론
+### 1. ESP-IDF 환경 준비
+```bash
+# ESP-IDF 설치 (Windows)
+# VS Code에서 ESP-IDF Extension 설치 권장
+# 또는 ESP-IDF 공식 설치 가이드 참조
+```
+
+### 2. 저장소 클론
 ```bash
 git clone https://github.com/your-username/esp32-weather-station.git
-cd esp32-weather-station
+cd ESP32Wx
 ```
 
-### 2. PlatformIO로 빌드
+### 3. ESP-IDF로 빌드
 ```bash
-# 빌드
-platformio run
+# VS Code에서 ESP-IDF Extension 사용 (권장)
+# Command Palette (Ctrl+Shift+P) → "ESP-IDF: Build"
+
+# 또는 터미널에서 직접 빌드
+idf.py build
 
 # 플래시 및 모니터링
-platformio run --target upload --target monitor
+idf.py -p COM3 flash monitor
+
+# 또는 VS Code 하단 상태바 버튼 사용
+# 🔨 Build → ⚡ Flash → 📟 Monitor
 ```
 
-### 3. 파일 시스템 업로드 (선택사항)
+### 4. LVGL 컴포넌트 확인
 ```bash
-# SPIFFS에 웹 파일 업로드
-platformio run --target uploadfs
+# LVGL 9.3.0이 components/lvgl/에 있는지 확인
+ls components/lvgl/
+
+# 빌드 시 LVGL이 자동으로 포함됨
 ```
+
+### 5. 파티션 설정
+- **16MB Flash**: `partitions.csv`에서 자동 설정
+- **SPIFFS**: 웹 파일용 2MB 할당
+- **OTA**: A/B 파티션으로 무선 업데이트 지원
 
 ## 📱 사용 방법
 
