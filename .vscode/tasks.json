@@ -2,29 +2,42 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "PlatformIO Build",
+			"label": "ESP-IDF: Build",
 			"type": "shell",
-			"command": "platformio",
+			"command": "idf.py",
 			"args": [
-				"run"
+				"build"
 			],
 			"problemMatcher": [
-				"$platformio"
+				"$gcc"
 			],
-			"group": "build"
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
 		},
 		{
-			"label": "PlatformIO Verbose Build",
+			"label": "ESP-IDF: Flash",
 			"type": "shell",
-			"command": "platformio",
+			"command": "idf.py",
 			"args": [
-				"run",
-				"--verbose"
+				"-p",
+				"${config:idf.port}",
+				"flash"
 			],
 			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
+				"$gcc"
+			]
+		},
+		{
+			"label": "ESP-IDF: Monitor",
+			"type": "shell",
+			"command": "idf.py",
+			"args": [
+				"-p",
+				"${config:idf.port}",
+				"monitor"
+			]
 		}
 	]
 }

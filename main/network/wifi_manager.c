@@ -10,10 +10,10 @@
 #include <lwip/err.h>
 #include <lwip/sys.h>
 
-#include "wifi_manager.h"
-#include "config_portal.h"
-#include "nvs_manager.h"
-#include "../common/constants.h"
+#include "network/wifi_manager.h"
+#include "network/config_portal.h"
+#include "storage/nvs_manager.h"
+#include "common/constants.h"
 
 static const char *TAG = LOG_TAG_WIFI;
 

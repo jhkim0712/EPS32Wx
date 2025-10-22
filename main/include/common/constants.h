@@ -72,17 +72,14 @@
 // =============================================================================
 
 // 태스크 스택 크기 (power of two, bytes 단위)
-#define MAIN_TASK_STACK_SIZE    8192
 #define WEATHER_TASK_STACK_SIZE 4096
 #define UI_TASK_STACK_SIZE      4096
 
 // 태스크 우선순위
-#define MAIN_TASK_PRIORITY      5
 #define WEATHER_TASK_PRIORITY   4
 #define UI_TASK_PRIORITY        3
 
 // 태스크 이름
-#define MAIN_TASK_NAME          "main_task"
 #define WEATHER_TASK_NAME       "weather_task"
 #define UI_TASK_NAME            "ui_task"
 
@@ -101,12 +98,92 @@
 // 디스플레이 설정
 #define DISPLAY_WIDTH           320
 #define DISPLAY_HEIGHT          480
-#define DISPLAY_ROTATION        0
+#define DISPLAY_ROTATION        270  // 0, 90, 180, 270 도
+
+// LCD 좌우/상하 미러 옵션 (필요 시 조정)
+// 좌우가 바뀌어 보이면 LCD_MIRROR_X를 1로 설정합니다.
+// 상하가 바뀌어 보이면 LCD_MIRROR_Y를 1로 설정합니다.
+#ifndef LCD_MIRROR_X
+#define LCD_MIRROR_X            1   // 좌우 반전 ON (영상 좌우 반전 이슈 대응)
+#endif
+#ifndef LCD_MIRROR_Y
+#define LCD_MIRROR_Y            0   // 상하 반전
+#endif
+
+// LCD 패널 드라이버 선택 (ESP-IDF 제공 드라이버 기준)
+// ST7796 심볼이 없는 IDF 버전이 있어 기본 ILI9488로 설정
+#define LCD_PANEL_USE_ST7796     1
+#define LCD_PANEL_USE_ILI9488    0
+
+// WT32-SC01-PLUS (ESP32-S3) LCD 인터페이스 핀 매핑
+// - 패널 컨트롤러: ST7796
+// - 버스 타입: 8bit MCU (8080, i80)
+// 데이터시트 표(첨부) 기준으로 정의
+
+// 백라이트 및 리셋
+#define LCD_BL_PIN              45   // BL_PWM, Active High
+#define LCD_BL_ACTIVE_HIGH      1
+#define LCD_RST_PIN             4    // LCD reset, TP reset과 멀티플렉스
+
+// i80(8080) 제어 신호
+#define LCD_RS_PIN              0    // RS (D/C)
+#define LCD_WR_PIN              47   // WR (Write clock)
+#define LCD_TE_PIN              48   // TE (Tearing effect / frame sync)
+
+// i80(8080) 데이터 버스 (DB0..DB7)
+#define LCD_DB0_PIN             9
+#define LCD_DB1_PIN             46
+#define LCD_DB2_PIN             3
+#define LCD_DB3_PIN             8
+#define LCD_DB4_PIN             18
+#define LCD_DB5_PIN             17
+#define LCD_DB6_PIN             16
+#define LCD_DB7_PIN             15
+
+// 레거시(SPI) 핀 정의 - 현재 보드에서는 사용하지 않음. 유지하여 기존 코드 빌드 영향 최소화.
+#define LCD_SPI_MOSI_PIN        11
+#define LCD_SPI_SCLK_PIN        12
+#define LCD_SPI_CS_PIN          10
+#define LCD_SPI_DC_PIN          13
+#define LCD_PIXEL_CLOCK_HZ      40000000  // 40MHz (SPI 사용 시)
+
+// LVGL 렌더 버퍼 설정 (라인 수)
+#define LVGL_BUFFER_LINES       40
+#define LVGL_TICK_PERIOD_MS      5
+#define LVGL_TASK_PERIOD_MS      10
+#define LVGL_TASK_STACK_SIZE     4096
+#define LVGL_TASK_PRIORITY       5
+#define LVGL_TASK_CORE_ID        1
 
 // 터치 스크린 설정
 #define TOUCH_I2C_SDA_PIN       6
 #define TOUCH_I2C_SCL_PIN       5
 #define TOUCH_I2C_ADDR          0x38
+#define TOUCH_I2C_CLK_HZ        400000
+#define TOUCH_I2C_PORT          0  // I2C_NUM_0
+#define TOUCH_INT_PIN           7
+#define TOUCH_RST_PIN           4
+
+
+// SD카드 설정
+#define SD_MOUNT_POINT          "/sdcard"
+#define SD_SPI_MISO_PIN         38
+#define SD_SPI_MOSI_PIN         40
+#define SD_SPI_SCK_PIN          39
+#define SD_SPI_CS_PIN           41
+
+// UART for Debug
+#define UART_DEV_TX_PIN         43
+#define UART_DEV_RX_PIN         44
+
+//Extended IO
+#define EXT_IO_01_PIN           10
+#define EXT_IO_02_PIN           11
+#define EXT_IO_03_PIN           12
+#define EXT_IO_04_PIN           13
+#define EXT_IO_05_PIN           14
+#define EXT_IO_06_PIN           21
+
 
 // =============================================================================
 // 로그 태그 상수

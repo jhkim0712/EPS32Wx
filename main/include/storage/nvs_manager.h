@@ -3,6 +3,7 @@
 
 #include "common/types.h"
 #include "esp_err.h"
+#include <esp_wifi.h>  // for wifi_config_t
 
 /**
  * @brief NVS 초기화
@@ -58,5 +59,21 @@ esp_err_t nvs_manager_set_first_boot(bool first_boot);
  * @return ESP_OK on success
  */
 esp_err_t nvs_manager_erase_all(void);
+
+/**
+ * @brief Read WiFi configuration (STA) from NVS into wifi_config_t
+ * @param wifi_config Output wifi_config_t buffer
+ * @return ESP_OK if SSID was found and copied
+ */
+esp_err_t nvs_get_wifi_config(wifi_config_t* wifi_config);
+
+/**
+ * @brief Read a string value by key into provided buffer (safe copy)
+ * @param key NVS key
+ * @param out Destination buffer
+ * @param out_len Destination buffer length
+ * @return ESP_OK on success
+ */
+esp_err_t nvs_get_string(const char* key, char* out, size_t out_len);
 
 #endif // NVS_MANAGER_H

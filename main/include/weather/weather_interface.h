@@ -71,6 +71,16 @@ typedef void (*weather_callback_t)(const weather_data_t *weather_data, esp_err_t
 esp_err_t weather_init(weather_provider_t provider);
 
 /**
+ * @brief 현재 날씨 요청 (제공자 지정)
+ * @param provider 사용할 날씨 API 제공자
+ * @param city_name 도시명
+ * @param api_key API 키
+ * @param callback 결과 콜백
+ * @return ESP_OK on success, error otherwise
+ */
+esp_err_t weather_request_current(weather_provider_t provider, const char *city_name, const char *api_key, weather_callback_t callback);
+
+/**
  * @brief 현재 날씨 정보 요청 (범용 인터페이스)
  * @param api_key API 키
  * @param city_name 도시명

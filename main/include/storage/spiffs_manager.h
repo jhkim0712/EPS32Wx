@@ -53,4 +53,11 @@ long spiffs_get_file_size(const char* path);
  */
 void spiffs_show_info(void);
 
+/**
+ * @brief Compatibility wrappers (legacy names)
+ * These map to spiffs_manager_init/deinit and are kept for convenience.
+ */
+esp_err_t spiffs_init(void);
+void spiffs_deinit(void);
+
 #endif // SPIFFS_MANAGER_H

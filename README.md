@@ -68,10 +68,10 @@ ESP32Wx/
 ├── 📂 data/                   # 웹 파일 저장소
 │   └── 📄 index.html         # 설정 포털 웹페이지
 ├── 📂 components/             # ESP-IDF 커스텀 컴포넌트
-│   └── 📂 lvgl/              # LVGL 9.3.0 그래픽 라이브러리
+│   └── 📂 lvgl/              # LVGL 8.3.11 그래픽 라이브러리
 │       ├── 📄 CMakeLists.txt # LVGL 컴포넌트 빌드 설정
-│       ├── 📄 lv_conf.h      # LVGL 설정 (512KB 메모리)
-│       └── 📂 lvgl/          # LVGL 소스 코드
+│       ├── 📄 lv_conf.h      # LVGL 설정 (권장: 16bpp, FreeRTOS OSAL)
+│       └── 📂 lvgl/          # LVGL 소스 코드 (v8.3.11)
 └── 📂 main/                   # 메인 애플리케이션 (ESP-IDF 표준)
     ├── 📄 main.c             # 메인 애플리케이션 엔트리 포인트
     ├── 📄 CMakeLists.txt     # 메인 컴포넌트 빌드 설정
@@ -119,6 +119,13 @@ ESP32Wx/
 - **터치**: I2C 터치 패널 (FT6236 컨트롤러)
 - **WiFi**: IEEE 802.11 b/g/n (2.4 GHz)
 
+### WT32-SC01-PLUS 핀 매핑 (기본값)
+- Board 제조사: https://en.wireless-tag.com/product-item-26.html
+
+
+
+핀 매핑은 `main/include/common/constants.h`에서 수정할 수 있습니다.
+
 ### 📋 **최소 시스템 요구사항**
 - **Flash 메모리**: 최소 8MB (권장 16MB)
 - **RAM**: 최소 512KB (PSRAM 포함)
@@ -159,28 +166,28 @@ git clone https://github.com/your-username/esp32-weather-station.git
 cd ESP32Wx
 ```
 
-### 3. ESP-IDF로 빌드
-```bash
-# VS Code에서 ESP-IDF Extension 사용 (권장)
-# Command Palette (Ctrl+Shift+P) → "ESP-IDF: Build"
-
-# 또는 터미널에서 직접 빌드
+### 3. ESP-IDF로 빌드 (Windows PowerShell)
+```powershell
+# ESP-IDF 환경 활성화 이후 실행 (ESP-IDF PowerShell 또는 export.ps1)
+idf.py set-target esp32s3
 idf.py build
 
 # 플래시 및 모니터링
-idf.py -p COM3 flash monitor
-
-# 또는 VS Code 하단 상태바 버튼 사용
-# 🔨 Build → ⚡ Flash → 📟 Monitor
+idf.py -p COM3 flash
+idf.py -p COM3 monitor
 ```
 
 ### 4. LVGL 컴포넌트 확인
-```bash
-# LVGL 9.3.0이 components/lvgl/에 있는지 확인
-ls components/lvgl/
+LVGL v8.3.11은 `components/lvgl/` 아래에 있고, CMake로 자동 빌드됩니다.
 
-# 빌드 시 LVGL이 자동으로 포함됨
-```
+### 6. LVGL 포팅 요약 (v8.3.11)
+
+- LVGL 코어 초기화 후 esp_timer로 5ms tick, 10ms 주기 핸들러 태스크(Core 1)
+- 디스플레이: esp_lcd ST7796 패널 사용 (i80 8bit 예정), 백라이트/리셋 GPIO 제어
+- 터치: FT6236 I2C 단일 터치 좌표 읽기
+- 스레드 안전: 다른 태스크에서 LVGL API 사용 시 `lvgl_lock(timeout_ms)`/`lvgl_unlock()` 호출
+
+UI 예제는 온도/습도/상태 레이블 3개를 생성하고, 날씨 태스크에서 값을 갱신합니다.
 
 ### 5. 파티션 설정
 - **16MB Flash**: `partitions.csv`에서 자동 설정
@@ -287,9 +294,9 @@ ls components/lvgl/
 ## 🔍 디버깅
 
 ### 시리얼 모니터 출력
-```bash
-# 실시간 로그 확인
-platformio device monitor --baud 115200
+```powershell
+# 실시간 로그 확인 (ESP-IDF)
+idf.py -p COM3 monitor
 ```
 
 ### 주요 로그 태그
@@ -361,7 +368,6 @@ platformio device monitor --baud 115200
 ## 🙏 감사의 말
 
 - [ESP-IDF](https://github.com/espressif/esp-idf) - Espressif Systems
-- [PlatformIO](https://platformio.org/) - 개발 플랫폼
 - [OpenWeatherMap](https://openweathermap.org/) - 날씨 API 서비스
 - [cJSON](https://github.com/DaveGamble/cJSON) - JSON 파싱 라이브러리
 

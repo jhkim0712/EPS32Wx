@@ -12,6 +12,7 @@
 #include "weather/weather_interface.h"
 #include "ui/ui_app.h"
 
+
 static const char *TAG = LOG_TAG_WEATHER;
 
 static TaskHandle_t weather_task_handle = NULL;
@@ -35,9 +36,9 @@ static void weather_response_callback(const weather_data_t *weather_data, esp_er
 
 void weather_task_request_current(void)
 {
-    char api_key[128];
-    char city_name[64];
-    
+    char api_key[128] = {0};
+    char city_name[64] = {0};
+
     // Check if WiFi is connected
     if (!wifi_manager_is_connected()) {
         ESP_LOGW(TAG, "WiFi not connected. Cannot request weather data.");
@@ -110,6 +111,12 @@ esp_err_t weather_task_start_periodic(uint32_t update_interval_sec)
         ESP_LOGW(TAG, "Weather task already running. Stopping current task first.");
         weather_task_stop_periodic();
         vTaskDelay(pdMS_TO_TICKS(100)); // Brief delay to ensure cleanup
+    }
+    
+    esp_err_t ret = weather_task_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize weather task system: %s", esp_err_to_name(ret));
+        return ret;
     }
     
     update_interval = update_interval_sec;
