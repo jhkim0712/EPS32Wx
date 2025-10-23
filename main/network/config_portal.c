@@ -11,6 +11,8 @@
 #include "storage/nvs_manager.h"
 #include "storage/spiffs_manager.h"
 #include "network/config_portal.h"
+#include "network/wifi_manager.h"
+#include "cJSON.h"
 
 static const char *TAG = LOG_TAG_CONFIG_PORTAL;
 
@@ -46,6 +48,154 @@ static esp_err_t serve_file(httpd_req_t *req, const char *path, const char *cont
 static esp_err_t root_get_handler(httpd_req_t *req)
 {
     return serve_file(req, "/index.html", "text/html");
+}
+
+static void set_json_type(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+}
+
+static esp_err_t api_scan_get_handler(httpd_req_t *req)
+{
+    // Perform WiFi scan and return JSON list
+    esp_err_t err = wifi_manager_scan();
+    if (err != ESP_OK) {
+        set_json_type(req);
+        return httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"scan failed\"}");
+    }
+
+    wifi_ap_record_t ap_info[20];
+    uint16_t count = wifi_manager_get_scan_results(ap_info, 20);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddBoolToObject(root, "success", true);
+    cJSON *arr = cJSON_AddArrayToObject(root, "networks");
+    for (uint16_t i = 0; i < count; ++i) {
+        cJSON *n = cJSON_CreateObject();
+        cJSON_AddStringToObject(n, "ssid", (const char*)ap_info[i].ssid);
+        cJSON_AddNumberToObject(n, "rssi", ap_info[i].rssi);
+        cJSON_AddNumberToObject(n, "authmode", ap_info[i].authmode);
+        cJSON_AddItemToArray(arr, n);
+    }
+
+    char *json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    if (!json) {
+        set_json_type(req);
+        return httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"oom\"}");
+    }
+
+    set_json_type(req);
+    esp_err_t ret = httpd_resp_sendstr(req, json);
+    cJSON_free(json);
+    return ret;
+}
+
+static esp_err_t api_status_get_handler(httpd_req_t *req)
+{
+    app_config_t cfg;
+    (void)nvs_manager_load_config(&cfg);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddBoolToObject(root, "success", true);
+    cJSON_AddStringToObject(root, "cityName", cfg.city_name);
+
+    char *json = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    if (!json) {
+        set_json_type(req);
+        return httpd_resp_sendstr(req, "{\"success\":false}");
+    }
+
+    set_json_type(req);
+    esp_err_t ret = httpd_resp_sendstr(req, json);
+    cJSON_free(json);
+    return ret;
+}
+
+static esp_err_t api_config_options_handler(httpd_req_t *req)
+{
+    // CORS preflight for JSON POST
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "POST, OPTIONS");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
+    return httpd_resp_send(req, NULL, 0);
+}
+
+static esp_err_t api_config_post_handler(httpd_req_t *req)
+{
+    // Expect JSON body: { ssid, password, apiKey, cityName }
+    int total = req->content_len;
+    if (total <= 0 || total > 1024) {
+        set_json_type(req);
+        return httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"invalid body\"}");
+    }
+
+    char *buf = (char*)malloc((size_t)total + 1);
+    if (!buf) {
+        set_json_type(req);
+        return httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"oom\"}");
+    }
+
+    int recvd = 0;
+    while (recvd < total) {
+        int r = httpd_req_recv(req, buf + recvd, total - recvd);
+        if (r <= 0) {
+            if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+            free(buf);
+            set_json_type(req);
+            return httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"recv error\"}");
+        }
+        recvd += r;
+    }
+    buf[recvd] = '\0';
+
+    cJSON *root = cJSON_Parse(buf);
+    free(buf);
+    if (!root) {
+        set_json_type(req);
+        return httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"invalid json\"}");
+    }
+
+    const cJSON *j_ssid = cJSON_GetObjectItemCaseSensitive(root, "ssid");
+    const cJSON *j_pass = cJSON_GetObjectItemCaseSensitive(root, "password");
+    const cJSON *j_api  = cJSON_GetObjectItemCaseSensitive(root, "apiKey");
+    const cJSON *j_city = cJSON_GetObjectItemCaseSensitive(root, "cityName");
+
+    app_config_t cfg; memset(&cfg, 0, sizeof(cfg));
+    cfg.first_boot = false;
+    cfg.update_interval = DEFAULT_UPDATE_INTERVAL_SEC;
+
+    if (cJSON_IsString(j_ssid) && j_ssid->valuestring) {
+        strncpy(cfg.wifi.ssid, j_ssid->valuestring, sizeof(cfg.wifi.ssid) - 1);
+    }
+    if (cJSON_IsString(j_pass) && j_pass->valuestring) {
+        strncpy(cfg.wifi.password, j_pass->valuestring, sizeof(cfg.wifi.password) - 1);
+    }
+    if (cJSON_IsString(j_api) && j_api->valuestring) {
+        strncpy(cfg.api_key, j_api->valuestring, sizeof(cfg.api_key) - 1);
+    }
+    if (cJSON_IsString(j_city) && j_city->valuestring) {
+        strncpy(cfg.city_name, j_city->valuestring, sizeof(cfg.city_name) - 1);
+    }
+
+    cfg.wifi.configured = (cfg.wifi.ssid[0] != '\0');
+
+    // Persist
+    (void)nvs_manager_save_wifi_config(cfg.wifi.ssid, cfg.wifi.password);
+    (void)nvs_manager_save_api_key(cfg.api_key);
+    (void)nvs_manager_save_city_name(cfg.city_name);
+    (void)nvs_manager_set_first_boot(false);
+
+    if (s_complete_cb) s_complete_cb(&cfg);
+
+    cJSON_Delete(root);
+
+    set_json_type(req);
+    return httpd_resp_sendstr(req, "{\"success\":true,\"message\":\"Configuration saved\"}");
 }
 
 static esp_err_t post_config_handler(httpd_req_t *req)
@@ -124,6 +274,19 @@ static httpd_handle_t start_server(void)
 
         httpd_uri_t post_cfg = { .uri = "/config", .method = HTTP_POST, .handler = post_config_handler, .user_ctx = NULL };
         httpd_register_uri_handler(server, &post_cfg);
+
+        // API endpoints used by data/index.html
+        httpd_uri_t api_scan = { .uri = "/api/scan", .method = HTTP_GET, .handler = api_scan_get_handler, .user_ctx = NULL };
+        httpd_register_uri_handler(server, &api_scan);
+
+        httpd_uri_t api_status = { .uri = "/api/status", .method = HTTP_GET, .handler = api_status_get_handler, .user_ctx = NULL };
+        httpd_register_uri_handler(server, &api_status);
+
+        httpd_uri_t api_cfg_opt = { .uri = "/api/config", .method = HTTP_OPTIONS, .handler = api_config_options_handler, .user_ctx = NULL };
+        httpd_register_uri_handler(server, &api_cfg_opt);
+
+        httpd_uri_t api_cfg = { .uri = "/api/config", .method = HTTP_POST, .handler = api_config_post_handler, .user_ctx = NULL };
+        httpd_register_uri_handler(server, &api_cfg);
 
         ESP_LOGI(TAG, "Config portal started on port %d", config.server_port);
         return server;

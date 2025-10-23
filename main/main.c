@@ -110,7 +110,21 @@ void app_main(void)
         esp_restart();
         return;
     }
-    
+
+    // If WiFi is not connected (likely AP/config mode), show AP info on display
+    if (wifi_manager_is_ap_mode() == true) {
+        ESP_LOGI(TAG, "Displaying configuration portal info on UI");
+        char ssid[33] = {0};
+        char ip[32] = {0};
+        if (wifi_manager_get_info(ssid, ip) == ESP_OK) {
+            char url[64];
+            snprintf(url, sizeof(url), "http://%s", ip[0] ? ip : DEFAULT_AP_IP_ADDR);
+            ui_show_config_portal_info(ssid, DEFAULT_AP_PASSWORD, url);
+        } else {
+            ui_show_config_portal_info(DEFAULT_AP_SSID, DEFAULT_AP_PASSWORD, DEFAULT_AP_IP_ADDR);
+        }
+    }
+
     ESP_LOGI(TAG, "ESP32 Weather Station ready!");
     
     esp_chip_info_t chip_info;
@@ -130,14 +144,23 @@ void app_main(void)
     
 
     // Start main task on application core (Core 1)
-   
-    weather_task_start_periodic(DEFAULT_UPDATE_INTERVAL_SEC);
-
+    // Start weather task only when WiFi is connected
+    if (wifi_manager_is_connected())
+    {
+        weather_task_start_periodic(DEFAULT_UPDATE_INTERVAL_SEC);
+    }
+    else
+    {
+        ESP_LOGI(TAG, "WiFi not connected; skipping weather task until configured.");
+    }
 
     while(true)
     {
         vTaskDelay(pdMS_TO_TICKS(10000));
         ESP_LOGI(TAG, "Free heap: %lu bytes", esp_get_free_heap_size());
+
+        // debug
+        ESP_LOGI(TAG, "wifi_manager_get_state(): %d\r\n", wifi_manager_get_state());
     }
 
 }

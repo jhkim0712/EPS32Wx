@@ -285,7 +285,7 @@ esp_err_t wifi_manager_setup_network(void)
     }
     
     ESP_LOGI(TAG, "Configuration portal started");
-    ESP_LOGI(TAG, "Connect to WiFi '%s' and open http://192.168.4.1", DEFAULT_AP_SSID);
+    ESP_LOGI(TAG, "Connect to WiFi '%s' and open http://%s", DEFAULT_AP_SSID, DEFAULT_AP_IP_ADDR);
     
     return ESP_OK;
 }

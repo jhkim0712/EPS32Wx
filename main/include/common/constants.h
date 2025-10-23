@@ -37,10 +37,8 @@
 #define DEFAULT_AP_PASSWORD     ""
 #define AP_CHANNEL              1
 #define AP_MAX_CONN             4
-
-// 호환성을 위한 기존 매크로들
-#define AP_SSID                 DEFAULT_AP_SSID
-#define AP_PASSWORD             DEFAULT_AP_PASSWORD
+#define DEFAULT_AP_IP_ADDR      "192.168.4.1"
+#define DEFAULT_AP_NETMASK      "255.255.255.0"
 
 // =============================================================================
 // 날씨 API 설정 상수
@@ -197,5 +195,14 @@
 #define LOG_TAG_CONFIG_PORTAL   "CONFIG_PORTAL"
 #define LOG_TAG_OTA             "OTA_MANAGER"
 #define LOG_TAG_SPIFFS          "SPIFFS_MANAGER"
+
+// =============================================================================
+// 폰트 설정 (한글 표시용)
+// =============================================================================
+// 한글 표시를 위해 커스텀 폰트를 사용할지 여부 (0: 사용 안 함, 1: 사용)
+// 1로 설정하고, ui/fonts 디렉토리에 lv_font_conv로 생성한 한글 폰트 C 파일을 추가하세요.
+#ifndef USE_FONT_KOREAN
+#define USE_FONT_KOREAN         0
+#endif
 
 #endif // CONSTANTS_H

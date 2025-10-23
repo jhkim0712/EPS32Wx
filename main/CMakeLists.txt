@@ -14,7 +14,7 @@ idf_component_register(
     SRCS        ${MAIN_SOURCES}
     INCLUDE_DIRS 
         "${CMAKE_CURRENT_LIST_DIR}/include"
-        REQUIRES
+    REQUIRES
         nvs_flash
         esp_wifi
         esp_netif
@@ -31,4 +31,5 @@ idf_component_register(
         driver
         esp_lcd
         spi_flash
+        cjson
 )
