@@ -28,7 +28,9 @@ static sd_file_entry_t *s_files = NULL; // MALLOC_CAP_SPIRAM
 static int s_file_count = 0;
 static int s_current_index = -1;
 
-static char s_path_buf[160]; // "S:" + full_path (LVGL LV_FS_STDIO 드라이브 문자 접두)
+// "S:" + full_path (LVGL LV_FS_STDIO 드라이브 문자 접두). full_path 자체가
+// sd_file_entry_t::full_path(192바이트)에서 오므로 그보다 여유 있게 잡는다.
+static char s_path_buf[200];
 
 static void clear_media(void)
 {

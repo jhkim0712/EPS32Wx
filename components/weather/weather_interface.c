@@ -4,7 +4,6 @@
 
 static const char *TAG = "WEATHER_IF";
 static weather_provider_t s_provider = WEATHER_PROVIDER_OPENWEATHERMAP;
-static weather_callback_t s_pending_cb = NULL; // reserved for future async impl
 
 esp_err_t weather_init(weather_provider_t provider)
 {

@@ -409,13 +409,18 @@ static esp_err_t api_gallery_list_get_handler(httpd_req_t *req)
     cJSON *arr = cJSON_AddArrayToObject(root, "files");
 
     if (sd_card_is_mounted()) {
-        sd_file_entry_t entries[32];
-        int count = sd_card_list_dir(SD_PHOTOS_SUBDIR, entries, 32);
-        for (int i = 0; i < count; ++i) {
-            cJSON *f = cJSON_CreateObject();
-            cJSON_AddStringToObject(f, "name", entries[i].name);
-            cJSON_AddNumberToObject(f, "size", (double)entries[i].size);
-            cJSON_AddItemToArray(arr, f);
+        // sd_file_entry_t 32개는 httpd 워커 태스크의 기본 스택(4~6KB)에 담기엔 너무 커서
+        // (약 8KB) 힙에 할당한다.
+        sd_file_entry_t *entries = (sd_file_entry_t *)malloc(sizeof(sd_file_entry_t) * 32);
+        if (entries) {
+            int count = sd_card_list_dir(SD_PHOTOS_SUBDIR, entries, 32);
+            for (int i = 0; i < count; ++i) {
+                cJSON *f = cJSON_CreateObject();
+                cJSON_AddStringToObject(f, "name", entries[i].name);
+                cJSON_AddNumberToObject(f, "size", (double)entries[i].size);
+                cJSON_AddItemToArray(arr, f);
+            }
+            free(entries);
         }
     }
 

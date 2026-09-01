@@ -157,7 +157,9 @@ int sd_card_list_dir(const char *rel_dir, sd_file_entry_t *out, int max_entries)
         sd_file_entry_t *e = &out[count];
         strncpy(e->name, entry->d_name, sizeof(e->name) - 1);
         e->name[sizeof(e->name) - 1] = '\0';
-        snprintf(e->full_path, sizeof(e->full_path), "%s/%s", full_dir, entry->d_name);
+        // e->name(이미 길이 제한됨)을 사용해 GCC가 최대 길이를 정적으로 증명할 수 있게 한다
+        // (entry->d_name을 직접 쓰면 dirent의 선언 크기 때문에 -Werror=format-truncation 발생).
+        snprintf(e->full_path, sizeof(e->full_path), "%s/%s", full_dir, e->name);
 
         struct stat st;
         e->size = (stat(e->full_path, &st) == 0) ? (size_t)st.st_size : 0;

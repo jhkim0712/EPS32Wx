@@ -1,7 +1,6 @@
 #include "weather/weather_task.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/timers.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 
@@ -16,7 +15,6 @@
 static const char *TAG = LOG_TAG_WEATHER;
 
 static TaskHandle_t weather_task_handle = NULL;
-static TimerHandle_t weather_timer = NULL;
 static uint32_t update_interval = 300; // Default 5 minutes
 static bool task_running = false;
 
@@ -60,12 +58,6 @@ void weather_task_request_current(void)
     } else {
         ESP_LOGW(TAG, "Weather API settings not configured. Use config portal.");
     }
-}
-
-static void weather_timer_callback(TimerHandle_t xTimer)
-{
-    ESP_LOGI(TAG, "Periodic weather update triggered");
-    weather_task_request_current();
 }
 
 static void weather_periodic_task(void *pvParameters)

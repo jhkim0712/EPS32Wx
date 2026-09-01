@@ -37,9 +37,9 @@ esp_err_t sd_card_get_info(uint64_t *total_bytes, uint64_t *free_bytes);
 
 // 갤러리 등에서 쓰는 파일 목록 항목
 typedef struct {
-    char name[64];       // 파일명만 (예: "sunset.jpg")
-    char full_path[128]; // VFS 절대 경로 (예: "/sdcard/photos/sunset.jpg")
-    size_t size;          // 바이트
+    char name[64];        // 파일명만 (예: "sunset.jpg"), 긴 파일명은 잘릴 수 있음
+    char full_path[192];  // VFS 절대 경로 (SD_MOUNT_POINT + rel_dir + "/" + name)
+    size_t size;           // 바이트
 } sd_file_entry_t;
 
 /**
