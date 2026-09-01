@@ -122,9 +122,13 @@
 #define DEFAULT_BRIGHTNESS_PERCENT 80
 
 // LVGL 렌더 버퍼 설정 (라인 수)
-// PSRAM 활성화 전에는 40(내부 DMA RAM에 맞는 크기)이었으나, PSRAM 사용 시
-// 320*120*2B = 76.8KB로 확대. 갤러리 슬라이드쇼 성능을 보고 더 키울 수 있음.
-#define LVGL_BUFFER_LINES       120
+// 120(320*120*2B=76.8KB)으로 키웠다가 실기기에서 i80 버스 GDMA 디스크립터 풀이
+// 감당 못 해 "gdma_link_mount_buffers: no more space for buffer mounting" ->
+// ISR 안에서 abort()까지 이어지는 크래시가 재현됐다 (더블버퍼 제거로도 해결 안 됨,
+// 즉 원인은 더블버퍼가 아니라 이 버퍼 크기 자체). 이 환경엔 ESP-IDF 소스가 없어
+// 정확한 디스크립터 한도를 확인할 수 없어, 세션 시작 전부터 쓰이던 원래 값(40,
+// 320*40*2B=25.6KB)으로 되돌린다. 다시 키우려면 반드시 실기기에서 검증할 것.
+#define LVGL_BUFFER_LINES       40
 #define LVGL_TICK_PERIOD_MS      5
 #define LVGL_TASK_PERIOD_MS      10
 #define LVGL_TASK_STACK_SIZE     4096
