@@ -343,6 +343,13 @@ esp_err_t lvgl_driver_init(void)
     ESP_RETURN_ON_ERROR(backlight_init(), TAG, "backlight init failed"); // 초기 밝기 0%(꺼짐)
     ESP_RETURN_ON_ERROR(lcd_reset_pulse(), TAG, "lcd reset failed");
     // i80 (8080) bus
+    // max_transfer_bytes는 esp_lcd가 내부 GDMA 디스크립터 링크 리스트를 미리
+    // 크기 계산해 할당하는 데 쓰인다. 실제 최대 플러시 크기와 정확히 같은 값을
+    // 주면 디스크립터 개수 산정의 경계값 반올림 때문에 "gdma_link_mount_buffers:
+    // no more space for buffer mounting" 에러가 날 수 있어(LVGL_BUFFER_LINES를
+    // 40->120으로 키우고 더블버퍼를 추가한 뒤 실기기에서 관찰됨), 한 디스크립터
+    // 블록(4KB) 이상 여유를 둔다.
+    size_t lvgl_max_flush_bytes = (size_t)DISPLAY_WIDTH * LVGL_BUFFER_LINES * sizeof(lv_color_t);
     esp_lcd_i80_bus_config_t bus_config = {
         .dc_gpio_num = LCD_RS_PIN,
         .wr_gpio_num = LCD_WR_PIN,
@@ -351,7 +358,7 @@ esp_err_t lvgl_driver_init(void)
             LCD_DB0_PIN, LCD_DB1_PIN, LCD_DB2_PIN, LCD_DB3_PIN,
             LCD_DB4_PIN, LCD_DB5_PIN, LCD_DB6_PIN, LCD_DB7_PIN},
         .bus_width = 8,
-        .max_transfer_bytes = DISPLAY_WIDTH * LVGL_BUFFER_LINES * sizeof(lv_color_t),
+        .max_transfer_bytes = lvgl_max_flush_bytes + 4096,
     };
     ESP_RETURN_ON_ERROR(esp_lcd_new_i80_bus(&bus_config, &s_i80_bus), TAG, "new_i80_bus failed");
 
@@ -398,15 +405,15 @@ esp_err_t lvgl_driver_init(void)
     if (!s_lvgl_buf1)
         return ESP_ERR_NO_MEM;
 
-    // 두 번째 버퍼(더블버퍼): 확보 실패해도 치명적이지 않음 — NULL이면 LVGL이
-    // 싱글 버퍼 모드로 계속 동작한다(끊김 없는 화면 전환 대신 안정성 우선).
-    lv_color_t *lvgl_buf2 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (!lvgl_buf2)
-    {
-        ESP_LOGW(TAG, "Failed to allocate second LVGL draw buffer; falling back to single buffering");
-    }
-
-    lv_disp_draw_buf_init(&s_draw_buf, s_lvgl_buf1, lvgl_buf2, buf_pixels);
+    // 더블버퍼는 의도적으로 쓰지 않는다: i80 패널 IO를 trans_queue_depth=1(한 번에
+    // 트랜잭션 하나)로 설정해뒀는데, 더블버퍼는 "버퍼A가 DMA 전송 중일 때 버퍼B를
+    // 렌더링"하는 파이프라인 방식이라 이 설정과 안전하게 맞물리지 않는다. 실기기에서
+    // 버퍼A의 GDMA 디스크립터가 아직 안 풀린 상태에서 버퍼B 디스크립터를 마운트하려다
+    // 풀이 바닥나 ISR 안에서 abort()까지 발생한 걸 확인했다 (gdma_link_mount_buffers
+    // "no more space for buffer mounting" → ISR에서 로깅 시도 → 락 오류로 abort).
+    // trans_queue_depth를 올리고 디스크립터 풀도 그만큼 키우는 대신, 검증된 싱글
+    // 버퍼 방식을 유지한다 — 화면 전환이 아주 약간 덜 매끄러운 정도의 트레이드오프.
+    lv_disp_draw_buf_init(&s_draw_buf, s_lvgl_buf1, NULL, buf_pixels);
 
     lv_disp_drv_init(&s_disp_drv);
     if (s_rotation_deg == 90 || s_rotation_deg == 270)
