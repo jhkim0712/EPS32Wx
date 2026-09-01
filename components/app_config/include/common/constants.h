@@ -230,6 +230,7 @@
 #define LOG_TAG_SYS_UTIL        "SYS_UTIL"
 #define LOG_TAG_SD              "SD_STORAGE"
 #define LOG_TAG_DISPLAY         "DISPLAY"
+#define LOG_TAG_CONSOLE         "UART_CONSOLE"
 
 // =============================================================================
 // 폰트 설정 (한글 표시용)

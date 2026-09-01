@@ -36,6 +36,7 @@
 #include "display/backlight.h"
 #include "ota/ota_manager.h"
 #include "util/system_restart.h"
+#include "console/uart_console.h"
 
 // Forward declaration (redundant with header, but avoids implicit declaration if include resolution lags)
 esp_err_t ui_app_start(void);
@@ -47,6 +48,10 @@ static esp_err_t device_init(void)
     esp_err_t ret = ESP_OK;
 
     ESP_LOGI(TAG, "Starting device initialization");
+
+    // 다른 서브시스템보다 먼저 띄워 부팅 초반 문제도 콘솔에서 디버깅할 수 있게 한다.
+    // idf.py monitor와 같은 UART를 공유하므로 로그와 명령 입출력이 한 화면에 섞여 보인다.
+    uart_console_start();
 
     ESP_LOGI(TAG, "PSRAM free: %u bytes", (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 

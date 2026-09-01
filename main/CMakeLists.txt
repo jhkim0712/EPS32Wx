@@ -15,6 +15,7 @@ idf_component_register(
         webui
         weather
         ota_updater
+        uart_console
         nvs_flash
         esp_timer
         esp_netif
