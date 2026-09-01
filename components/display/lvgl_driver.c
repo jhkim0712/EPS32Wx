@@ -398,10 +398,16 @@ esp_err_t lvgl_driver_init(void)
     // 백라이트 켜기 (기본 밝기; NVS에 저장된 값이 있으면 main.c가 부팅 후 다시 적용한다)
     backlight_set_percent(DEFAULT_BRIGHTNESS_PERCENT);
 
+    // 주의: 이 버퍼는 i80 LCD 컨트롤러가 GDMA로 직접 읽어가는 "플러시 버퍼"라서
+    // PSRAM에 두면 안 된다 — PSRAM을 이번 세션에 처음 활성화한 뒤(그 전엔 항상
+    // 아래 MALLOC_CAP_DMA 폴백으로 갔었다) 실기기에서 첫 플러시마다 100% 재현되는
+    // "gdma_link_mount_buffers: no more space for buffer mounting" -> ISR 안
+    // abort() 크래시의 원인이었다 (더블버퍼 제거, 버퍼 크기 축소 등 다른 시도는 전부
+    // 효과 없었음 — 크기가 아니라 메모리 종류가 문제였다). GDMA로 직접 전송되는
+    // 버퍼는 반드시 내부 DMA 가용 RAM(MALLOC_CAP_DMA)에 둬야 한다. PSRAM은 LVGL
+    // 자체 힙(LV_MEM_CUSTOM, 디코딩된 이미지 등 CPU가 다루는 데이터)에는 계속 쓰인다.
     size_t buf_pixels = DISPLAY_WIDTH * LVGL_BUFFER_LINES;
-    s_lvgl_buf1 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (!s_lvgl_buf1)
-        s_lvgl_buf1 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+    s_lvgl_buf1 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
     if (!s_lvgl_buf1)
         return ESP_ERR_NO_MEM;
 
