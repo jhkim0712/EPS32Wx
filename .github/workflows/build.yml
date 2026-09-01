@@ -1,0 +1,47 @@
+name: Build Firmware
+
+# 모든 브랜치 push / PR / 수동 실행 시 ESP-IDF로 빌드하고 산출물(바이너리)을 아티팩트로 업로드한다.
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ESP-IDF build (esp32s3)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 공식 Espressif Docker 이미지(espressif/idf) 안에서 idf.py build를 실행한다.
+      # 로컬 개발 환경(v5.5.1)과 맞춰 특정 패치 버전을 고정한다.
+      - name: Build with ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.1
+          target: esp32s3
+
+      - name: Collect flashable artifacts
+        run: |
+          set -e
+          mkdir -p artifacts
+          cp build/bootloader/bootloader.bin artifacts/
+          cp build/partition_table/partition-table.bin artifacts/
+          cp build/EPS32Wx.bin artifacts/
+          cp build/EPS32Wx.map artifacts/
+          cp build/flasher_args.json artifacts/
+          cp partitions.csv artifacts/
+          cp sdkconfig artifacts/
+          # SPIFFS 이미지(data/)는 옵션 — 없어도 빌드 실패로 취급하지 않는다.
+          if [ -f build/spiffs.bin ]; then cp build/spiffs.bin artifacts/; fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eps32wx-firmware-${{ github.sha }}
+          path: artifacts/
+          retention-days: 30
+          if-no-files-found: error

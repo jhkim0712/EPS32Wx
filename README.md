@@ -1,5 +1,7 @@
 # 🌤️ ESP32Wx
 
+[![Build Firmware](https://github.com/jhkim0712/EPS32Wx/actions/workflows/build.yml/badge.svg)](https://github.com/jhkim0712/EPS32Wx/actions/workflows/build.yml)
+
 WT32-SC01-PLUS(ESP32-S3, 3.5" 터치 LCD) 기반의 스마트 데스크 디스플레이 프로젝트입니다.
 날씨/시계 화면, WiFi 설정 포털, SD 카드 디지털 액자, GitHub 릴리스 기반 OTA를 ESP-IDF 표준
 컴포넌트 구조 위에서 제공합니다. GeekMagic SmallTV류 제품의 UX(시계·날씨·사진 슬라이드쇼
@@ -176,7 +178,7 @@ WT32-SC01-PLUS 보드 자체에는 SD 슬롯이 없습니다. 외장 SPI microSD
 
 ### 2. 저장소 클론
 ```bash
-git clone https://github.com/your-username/esp32-weather-station.git
+git clone https://github.com/jhkim0712/EPS32Wx.git
 cd ESP32Wx
 ```
 
@@ -210,6 +212,13 @@ idf.py -p COM3 monitor
 - **16MB Flash**: `partitions.csv`에서 커스텀 파티션 테이블 사용
 - **SPIFFS**: 웹 파일용 ~4.75MB 할당
 - **OTA**: `ota_0`/`ota_1` 2MB씩 A/B 파티션 (`otadata` 포함) — 무선 업데이트 + 롤백 지원
+
+### 7. CI (GitHub Actions)
+모든 브랜치에 push하거나 PR을 열면 `.github/workflows/build.yml`이 공식 Espressif Docker
+이미지(`espressif/idf:v5.5.1`)로 `idf.py build`를 실행합니다. 빌드가 통과하면 부트로더/
+파티션 테이블/앱/SPIFFS 이미지가 워크플로 실행의 Artifacts에 `eps32wx-firmware-<커밋
+SHA>`로 업로드됩니다 — [Actions 탭](https://github.com/jhkim0712/EPS32Wx/actions)에서
+내려받아 `esptool.py`로 바로 플래시할 수 있습니다.
 
 ## 📱 사용 방법
 
@@ -408,8 +417,8 @@ idf.py -p COM3 monitor
 
 ## 📞 연락처
 
-- **프로젝트 링크**: [https://github.com/your-username/esp32-weather-station](https://github.com/your-username/esp32-weather-station)
-- **이슈 트래커**: [https://github.com/your-username/esp32-weather-station/issues](https://github.com/your-username/esp32-weather-station/issues)
+- **프로젝트 링크**: [https://github.com/jhkim0712/EPS32Wx](https://github.com/jhkim0712/EPS32Wx)
+- **이슈 트래커**: [https://github.com/jhkim0712/EPS32Wx/issues](https://github.com/jhkim0712/EPS32Wx/issues)
 
 ## 🙏 감사의 말
 
