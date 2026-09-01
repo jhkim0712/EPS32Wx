@@ -9,7 +9,7 @@
 #define WEB_FILES_PATH          "/web"
 
 // OTA 업데이트 설정
-#define OTA_PARTITION_SIZE      0x180000     // 1.5MB per partition
+#define OTA_PARTITION_SIZE      0x200000     // 2MB per partition (partitions.csv와 일치시킬 것)
 #define OTA_URL_MAX_LEN         256
 #define OTA_TIMEOUT_MS          30000        // 30초
 #define FIRMWARE_VERSION        "1.0.0"

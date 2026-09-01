@@ -209,7 +209,7 @@ idf.py -p COM3 monitor
 ### 6. 파티션 설정
 - **16MB Flash**: `partitions.csv`에서 커스텀 파티션 테이블 사용
 - **SPIFFS**: 웹 파일용 ~4.75MB 할당
-- **OTA**: `ota_0`/`ota_1` 1.5MB씩 A/B 파티션 (`otadata` 포함) — 무선 업데이트 + 롤백 지원
+- **OTA**: `ota_0`/`ota_1` 2MB씩 A/B 파티션 (`otadata` 포함) — 무선 업데이트 + 롤백 지원
 
 ## 📱 사용 방법
 
@@ -315,9 +315,11 @@ idf.py -p COM3 monitor
 | nvs | data | 0x9000 | 24KB | 설정 저장소 |
 | phy_init | data | 0xf000 | 4KB | RF 보정 데이터 |
 | otadata | data | 0x10000 | 8KB | 현재 부팅 슬롯 정보 |
-| ota_0 | app | 0x20000 | 1.5MB | 애플리케이션 슬롯 A |
-| ota_1 | app | 0x1A0000 | 1.5MB | 애플리케이션 슬롯 B (OTA 대상) |
-| spiffs | data | 0x320000 | ~4.75MB | 웹 파일(`data/`) |
+| ota_0 | app | 0x20000 | 2MB | 애플리케이션 슬롯 A |
+| ota_1 | app | 0x220000 | 2MB | 애플리케이션 슬롯 B (OTA 대상) |
+| spiffs | data | 0x420000 | ~4.75MB | 웹 파일(`data/`) |
+
+나머지 ~7MB는 미할당 상태로 남겨 향후 OTA 슬롯/SPIFFS 확장 여유로 둡니다.
 
 ## 🔍 디버깅
 
