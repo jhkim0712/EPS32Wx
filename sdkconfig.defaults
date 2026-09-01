@@ -1,0 +1,39 @@
+# EPS32Wx sdkconfig.defaults
+#
+# Non-default Kconfig values this project relies on. `sdkconfig` (checked in)
+# is the actual build config; this file exists so a clean checkout / a
+# `sdkconfig` regenerated from scratch (`idf.py set-target esp32s3` on an
+# empty build dir, or `rm sdkconfig && idf.py reconfigure`) reproduces the
+# same configuration instead of silently falling back to defaults (e.g.
+# PSRAM off), which previously caused a real bug (see project history).
+#
+# Target board: WT32-SC01-PLUS (WT32-S3-WROVER-N16R2 module)
+#   - ESP32-S3, 16MB flash, 2MB Quad SPI PSRAM (NOT Octal)
+
+CONFIG_IDF_TARGET="esp32s3"
+
+# --- Flash / partition table (WT32-SC01-PLUS: 16MB flash, custom A/B OTA table) ---
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+
+# --- PSRAM: Quad mode, 2MB (WROVER-N16R2 is Quad PSRAM, not Octal) ---
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_QUAD=y
+CONFIG_SPIRAM_TYPE_AUTO=y
+CONFIG_SPIRAM_SPEED_40M=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384
+
+# --- OTA rollback: required for ota_updater's post-update health check ---
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+CONFIG_APP_ROLLBACK_ENABLE=y
+
+# --- Main task stack: device_init() runs NVS+SPIFFS+SD(SPI/DMA)+LVGL+WiFi init
+# sequentially on the "main" task before app_main()'s own loop. The IDF default
+# (3584B) overflowed inside the SD SPI driver's DMA setup path (observed as a
+# hard crash: "A stack overflow in task main has been detected" from within
+# sdspi_host_do_transaction). 8KB gives comfortable headroom.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

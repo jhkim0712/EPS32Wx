@@ -1,35 +1,24 @@
-# Register main component sources and include paths
-
-# Collect sources recursively within main/ subfolders
-file(GLOB_RECURSE MAIN_SOURCES
-    "${CMAKE_CURRENT_LIST_DIR}/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/common/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/network/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/storage/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/weather/*.c"
-    "${CMAKE_CURRENT_LIST_DIR}/ui/*.c"
-)
-
+# Thin orchestrator component: main.c only wires the other components
+# together at boot. All feature logic lives in components/.
 idf_component_register(
-    SRCS        ${MAIN_SOURCES}
-    INCLUDE_DIRS 
-        "${CMAKE_CURRENT_LIST_DIR}/include"
-    REQUIRES
+    SRCS "main.c"
+    INCLUDE_DIRS "."
+    PRIV_REQUIRES
+        app_config
+        sys_util
+        nvs_storage
+        spiffs_storage
+        sd_storage
+        display
+        ui
+        wifi_net
+        webui
+        weather
+        ota_updater
+        uart_console
         nvs_flash
-        esp_wifi
-        esp_netif
-        esp_event
         esp_timer
-        lvgl
-        esp_http_client
-        esp_http_server
-        esp-tls
-        mbedtls
-        spiffs
-        app_update
-        esp_https_ota
-        driver
-        esp_lcd
+        esp_netif
+        lwip
         spi_flash
-        cjson
 )
