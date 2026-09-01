@@ -82,6 +82,29 @@ static esp_err_t device_init(void)
         ESP_LOGI(TAG, "SPIFFS initialization completed");
     }
 
+    // 저장된 설정(밝기/회전/타임존/슬라이드쇼 등)을 한 번 읽어, TZ 환경변수와
+    // UI 레이어(백라이트/회전/갤러리)에 적용한다.
+    app_config_t cfg;
+    (void)nvs_manager_load_config(&cfg);
+    if (cfg.timezone_posix[0] != '\0') {
+        setenv("TZ", cfg.timezone_posix, 1);
+        tzset();
+    }
+
+    // LCD(i80/GDMA)를 SD카드(SPI/DMA)보다 먼저 초기화한다: 둘 다 DMA를 쓰는데,
+    // SD 마운트가 실패해도(카드 없음/포맷 안 됨) SPI 버스를 못 쓰는 채로 잠깐이라도
+    // 물고 있을 수 있어(마운트 실패 시 바로 해제하긴 하지만) 디스플레이가 자원을
+    // 먼저 확보하도록 순서를 정해 안전 마진을 둔다.
+    ESP_LOGI(TAG, "Initializing LVGL driver...");
+    ret = lvgl_driver_init();
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "LVGL driver initialization failed: %s (display limited)", esp_err_to_name(ret));
+    } else {
+        ESP_LOGI(TAG, "LVGL driver initialization completed");
+        ui_app_start();
+        ui_apply_config(&cfg);
+    }
+
     // SD 카드는 선택 장치(외장 microSD 모듈이 배선되어 있지 않을 수 있음) —
     // 실패해도 앱 전체를 막지 않고 경고만 남긴다 (디지털 액자 기능만 비활성화됨).
     ESP_LOGI(TAG, "Initializing SD card...");
@@ -94,25 +117,6 @@ static esp_err_t device_init(void)
             ESP_LOGI(TAG, "SD card: %llu MB total, %llu MB free",
                      (unsigned long long)(total / (1024 * 1024)), (unsigned long long)(free_b / (1024 * 1024)));
         }
-    }
-
-    // 저장된 설정(밝기/회전/타임존/슬라이드쇼 등)을 한 번 읽어, TZ 환경변수와
-    // UI 레이어(백라이트/회전/갤러리)에 적용한다.
-    app_config_t cfg;
-    (void)nvs_manager_load_config(&cfg);
-    if (cfg.timezone_posix[0] != '\0') {
-        setenv("TZ", cfg.timezone_posix, 1);
-        tzset();
-    }
-
-    ESP_LOGI(TAG, "Initializing LVGL driver...");
-    ret = lvgl_driver_init();
-    if (ret != ESP_OK) {
-        ESP_LOGW(TAG, "LVGL driver initialization failed: %s (display limited)", esp_err_to_name(ret));
-    } else {
-        ESP_LOGI(TAG, "LVGL driver initialization completed");
-        ui_app_start();
-        ui_apply_config(&cfg);
     }
 
     ESP_LOGI(TAG, "Initializing WiFi manager...");

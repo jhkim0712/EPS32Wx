@@ -65,6 +65,13 @@ esp_err_t sd_card_init(void)
                           "MISO=%d MOSI=%d SCK=%d CS=%d?",
                      esp_err_to_name(ret), SD_SPI_MISO_PIN, SD_SPI_MOSI_PIN, SD_SPI_SCK_PIN, SD_SPI_CS_PIN);
         }
+        // 마운트 실패 시 SPI 버스(+DMA 채널)를 잡은 채로 두지 않는다 — 안 그러면 SD를
+        // 못 쓰는 상태로 계속 DMA 채널 하나를 물고 있어, 나중에 LCD 같은 다른 DMA
+        // 사용 주변장치가 자원 부족을 겪을 수 있다.
+        if (s_spi_bus_initialized) {
+            spi_bus_free(host.slot);
+            s_spi_bus_initialized = false;
+        }
         return ret;
     }
 
