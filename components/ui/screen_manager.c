@@ -16,11 +16,13 @@ static lv_obj_t *s_nav_buttons[SCREEN_COUNT] = {0};
 static app_screen_id_t s_current = SCREEN_CLOCK;
 static bool s_inited = false;
 
+// LVGL 기본 폰트(Montserrat)는 한글 글리프가 없어 온디바이스 텍스트는 영문으로 유지한다
+// (웹 포털은 브라우저가 렌더링하므로 한글 사용 가능. USE_FONT_KOREAN 향후 과제 참고).
 static const char *s_nav_labels[SCREEN_COUNT] = {
-    "\xEC\x8B\x9C\xEA\xB3\x84",   // 시계
-    "\xEB\x82\xA0\xEC\x94\xA8",   // 날씨
-    "\xEC\x82\xAC\xEC\xA7\x84",   // 사진
-    "\xEC\x84\xA4\xEC\xA0\x95",   // 설정
+    "Clock",
+    "Weather",
+    "Gallery",
+    "Settings",
 };
 
 static void nav_button_event_cb(lv_event_t *e)

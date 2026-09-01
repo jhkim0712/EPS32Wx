@@ -72,7 +72,7 @@ static TaskHandle_t s_lvgl_task = NULL;
 static int s_rotation_deg = DISPLAY_ROTATION;
 
 #define FT_REG_TD_STATUS 0x02
-#define FT_REG_P1_XH     0x03
+#define FT_REG_P1_XH 0x03
 
 static i2c_port_t s_touch_port = 0; // I2C_NUM_0
 
@@ -89,8 +89,8 @@ static inline esp_err_t panel_write_cmd1(uint8_t cmd, uint8_t val)
 
 static inline esp_err_t panel_set_addr_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 {
-    uint8_t caset[4] = { (uint8_t)(x0 >> 8), (uint8_t)(x0 & 0xFF), (uint8_t)(x1 >> 8), (uint8_t)(x1 & 0xFF) };
-    uint8_t raset[4] = { (uint8_t)(y0 >> 8), (uint8_t)(y0 & 0xFF), (uint8_t)(y1 >> 8), (uint8_t)(y1 & 0xFF) };
+    uint8_t caset[4] = {(uint8_t)(x0 >> 8), (uint8_t)(x0 & 0xFF), (uint8_t)(x1 >> 8), (uint8_t)(x1 & 0xFF)};
+    uint8_t raset[4] = {(uint8_t)(y0 >> 8), (uint8_t)(y0 & 0xFF), (uint8_t)(y1 >> 8), (uint8_t)(y1 & 0xFF)};
     ESP_RETURN_ON_ERROR(panel_write_cmd(0x2A, caset, 4), TAG, "CASET failed");
     ESP_RETURN_ON_ERROR(panel_write_cmd(0x2B, raset, 4), TAG, "RASET failed");
     return ESP_OK;
@@ -100,38 +100,64 @@ static inline esp_err_t panel_set_addr_window(uint16_t x0, uint16_t y0, uint16_t
 // lvgl_driver_init()과 display_set_rotation() 양쪽에서 재사용한다.
 static uint8_t compute_madctl(int rotation_deg)
 {
-    const uint8_t MADCTL_MY  = 0x80; // Row Address Order (Y mirror)
-    const uint8_t MADCTL_MX  = 0x40; // Column Address Order (X mirror)
-    const uint8_t MADCTL_MV  = 0x20; // Row/Column Exchange (swap X/Y)
+    const uint8_t MADCTL_MY = 0x80;  // Row Address Order (Y mirror)
+    const uint8_t MADCTL_MX = 0x40;  // Column Address Order (X mirror)
+    const uint8_t MADCTL_MV = 0x20;  // Row/Column Exchange (swap X/Y)
     const uint8_t MADCTL_BGR = 0x08; // BGR order bit
     uint8_t madctl = MADCTL_BGR;
 
     // Base rotation (common mapping for ST77xx/ILI9488 family)
-    switch (rotation_deg) {
-        case 90:  madctl |= MADCTL_MV | MADCTL_MX; break;
-        case 180: madctl |= MADCTL_MX | MADCTL_MY; break;
-        case 270: madctl |= MADCTL_MV | MADCTL_MY; break;
-        case 0:
-        default:  break; // no MV/MX/MY
+    switch (rotation_deg)
+    {
+    case 90:
+        madctl |= MADCTL_MV | MADCTL_MX;
+        break;
+    case 180:
+        madctl |= MADCTL_MX | MADCTL_MY;
+        break;
+    case 270:
+        madctl |= MADCTL_MV | MADCTL_MY;
+        break;
+    case 0:
+    default:
+        break; // no MV/MX/MY
     }
 
     // Screen-axis mirror mapping: mirror "left-right"/"up-down" on the final screen
 #if LCD_MIRROR_X
-    switch (rotation_deg) {
-        case 90:  madctl ^= MADCTL_MY; break;
-        case 180: madctl ^= MADCTL_MX; break;
-        case 270: madctl ^= MADCTL_MY; break;
-        case 0:
-        default:  madctl ^= MADCTL_MX; break;
+    switch (rotation_deg)
+    {
+    case 90:
+        madctl ^= MADCTL_MY;
+        break;
+    case 180:
+        madctl ^= MADCTL_MX;
+        break;
+    case 270:
+        madctl ^= MADCTL_MY;
+        break;
+    case 0:
+    default:
+        madctl ^= MADCTL_MX;
+        break;
     }
 #endif
 #if LCD_MIRROR_Y
-    switch (rotation_deg) {
-        case 90:  madctl ^= MADCTL_MX; break;
-        case 180: madctl ^= MADCTL_MY; break;
-        case 270: madctl ^= MADCTL_MX; break;
-        case 0:
-        default:  madctl ^= MADCTL_MY; break;
+    switch (rotation_deg)
+    {
+    case 90:
+        madctl ^= MADCTL_MX;
+        break;
+    case 180:
+        madctl ^= MADCTL_MY;
+        break;
+    case 270:
+        madctl ^= MADCTL_MX;
+        break;
+    case 0:
+    default:
+        madctl ^= MADCTL_MY;
+        break;
     }
 #endif
     return madctl;
@@ -139,7 +165,8 @@ static uint8_t compute_madctl(int rotation_deg)
 
 static esp_err_t lcd_reset_pulse(void)
 {
-    if (LCD_RST_PIN >= 0) {
+    if (LCD_RST_PIN >= 0)
+    {
         gpio_config_t io_conf = {
             .pin_bit_mask = 1ULL << LCD_RST_PIN,
             .mode = GPIO_MODE_OUTPUT,
@@ -166,7 +193,8 @@ static void lcd_flush_cb(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_colo
     const int y2 = area->y2;
 
     // Set drawing window then push color data
-    if (panel_set_addr_window(x1, y1, x2, y2) == ESP_OK) {
+    if (panel_set_addr_window(x1, y1, x2, y2) == ESP_OK)
+    {
         size_t w = (size_t)(x2 - x1 + 1);
         size_t h = (size_t)(y2 - y1 + 1);
         size_t len = w * h * sizeof(lv_color_t);
@@ -179,7 +207,9 @@ static void lcd_flush_cb(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_colo
 // esp_lcd color transfer done -> notify LVGL the flush completed
 static bool lcd_color_trans_done_cb(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
-    (void)panel_io; (void)edata; (void)user_ctx;
+    (void)panel_io;
+    (void)edata;
+    (void)user_ctx;
     lv_disp_flush_ready(&s_disp_drv);
     return false; // no higher priority task woken
 }
@@ -193,8 +223,10 @@ static void lvgl_tick_cb(void *arg)
 static void lvgl_task(void *arg)
 {
     (void)arg;
-    while (1) {
-        if (s_lvgl_mutex && xSemaphoreTake(s_lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+    while (1)
+    {
+        if (s_lvgl_mutex && xSemaphoreTake(s_lvgl_mutex, portMAX_DELAY) == pdTRUE)
+        {
             lv_timer_handler();
             xSemaphoreGive(s_lvgl_mutex);
         }
@@ -215,7 +247,8 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data)
     i2c_master_write_byte(cmd, (TOUCH_I2C_ADDR << 1) | I2C_MASTER_READ, true);
     i2c_master_read(cmd, buf, sizeof(buf), I2C_MASTER_LAST_NACK);
     i2c_master_stop(cmd);
-    if (i2c_master_cmd_begin(s_touch_port, cmd, pdMS_TO_TICKS(50)) != ESP_OK) {
+    if (i2c_master_cmd_begin(s_touch_port, cmd, pdMS_TO_TICKS(50)) != ESP_OK)
+    {
         i2c_cmd_link_delete(cmd);
         data->state = LV_INDEV_STATE_RELEASED;
         return;
@@ -223,7 +256,8 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data)
     i2c_cmd_link_delete(cmd);
 
     uint8_t points = buf[0] & 0x0F;
-    if (points == 0) {
+    if (points == 0)
+    {
         data->state = LV_INDEV_STATE_RELEASED;
         return;
     }
@@ -235,35 +269,40 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data)
     int16_t tx = (int16_t)x;
     int16_t ty = (int16_t)y;
 
-    // 1) Mirror to match MADCTL MX/MY settings
-    #if LCD_MIRROR_X
-        tx = (int16_t)(DISPLAY_WIDTH - 1 - tx);
-    #endif
-    #if LCD_MIRROR_Y
-        ty = (int16_t)(DISPLAY_HEIGHT - 1 - ty);
-    #endif
+// 1) Mirror to match MADCTL MX/MY settings
+#if LCD_MIRROR_X
+    tx = (int16_t)(DISPLAY_WIDTH - 1 - tx);
+#endif
+#if LCD_MIRROR_Y
+    ty = (int16_t)(DISPLAY_HEIGHT - 1 - ty);
+#endif
 
     // 2) Rotation (런타임 s_rotation_deg: 0/90/180/270 — display_set_rotation()으로 변경 가능)
-    switch (s_rotation_deg) {
-        case 90: {
-            int16_t rx = ty;
-            int16_t ry = (int16_t)(DISPLAY_WIDTH - 1 - tx);
-            tx = rx; ty = ry;
-            break;
-        }
-        case 180:
-            tx = (int16_t)(DISPLAY_WIDTH - 1 - tx);
-            ty = (int16_t)(DISPLAY_HEIGHT - 1 - ty);
-            break;
-        case 270: {
-            int16_t rx = (int16_t)(DISPLAY_HEIGHT - 1 - ty);
-            int16_t ry = tx;
-            tx = rx; ty = ry;
-            break;
-        }
-        case 0:
-        default:
-            break;
+    switch (s_rotation_deg)
+    {
+    case 90:
+    {
+        int16_t rx = ty;
+        int16_t ry = (int16_t)(DISPLAY_WIDTH - 1 - tx);
+        tx = rx;
+        ty = ry;
+        break;
+    }
+    case 180:
+        tx = (int16_t)(DISPLAY_WIDTH - 1 - tx);
+        ty = (int16_t)(DISPLAY_HEIGHT - 1 - ty);
+        break;
+    case 270:
+    {
+        int16_t rx = (int16_t)(DISPLAY_HEIGHT - 1 - ty);
+        int16_t ry = tx;
+        tx = rx;
+        ty = ry;
+        break;
+    }
+    case 0:
+    default:
+        break;
     }
 
     data->point.x = tx;
@@ -289,7 +328,8 @@ static esp_err_t i2c_touch_init(void)
 
 esp_err_t lvgl_driver_init(void)
 {
-    if (s_lvgl_inited) {
+    if (s_lvgl_inited)
+    {
         ESP_LOGI(TAG, "LVGL already initialized");
         return ESP_OK;
     }
@@ -297,7 +337,8 @@ esp_err_t lvgl_driver_init(void)
     lv_init();
 
     s_lvgl_mutex = xSemaphoreCreateMutex();
-    if (!s_lvgl_mutex) return ESP_ERR_NO_MEM;
+    if (!s_lvgl_mutex)
+        return ESP_ERR_NO_MEM;
 
     ESP_RETURN_ON_ERROR(backlight_init(), TAG, "backlight init failed"); // 초기 밝기 0%(꺼짐)
     ESP_RETURN_ON_ERROR(lcd_reset_pulse(), TAG, "lcd reset failed");
@@ -308,8 +349,7 @@ esp_err_t lvgl_driver_init(void)
         .clk_src = LCD_CLK_SRC_DEFAULT,
         .data_gpio_nums = {
             LCD_DB0_PIN, LCD_DB1_PIN, LCD_DB2_PIN, LCD_DB3_PIN,
-            LCD_DB4_PIN, LCD_DB5_PIN, LCD_DB6_PIN, LCD_DB7_PIN
-        },
+            LCD_DB4_PIN, LCD_DB5_PIN, LCD_DB6_PIN, LCD_DB7_PIN},
         .bus_width = 8,
         .max_transfer_bytes = DISPLAY_WIDTH * LVGL_BUFFER_LINES * sizeof(lv_color_t),
     };
@@ -353,23 +393,29 @@ esp_err_t lvgl_driver_init(void)
 
     size_t buf_pixels = DISPLAY_WIDTH * LVGL_BUFFER_LINES;
     s_lvgl_buf1 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (!s_lvgl_buf1) s_lvgl_buf1 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
-    if (!s_lvgl_buf1) return ESP_ERR_NO_MEM;
+    if (!s_lvgl_buf1)
+        s_lvgl_buf1 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+    if (!s_lvgl_buf1)
+        return ESP_ERR_NO_MEM;
 
     // 두 번째 버퍼(더블버퍼): 확보 실패해도 치명적이지 않음 — NULL이면 LVGL이
     // 싱글 버퍼 모드로 계속 동작한다(끊김 없는 화면 전환 대신 안정성 우선).
     lv_color_t *lvgl_buf2 = (lv_color_t *)heap_caps_malloc(buf_pixels * sizeof(lv_color_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (!lvgl_buf2) {
+    if (!lvgl_buf2)
+    {
         ESP_LOGW(TAG, "Failed to allocate second LVGL draw buffer; falling back to single buffering");
     }
 
     lv_disp_draw_buf_init(&s_draw_buf, s_lvgl_buf1, lvgl_buf2, buf_pixels);
 
     lv_disp_drv_init(&s_disp_drv);
-    if (s_rotation_deg == 90 || s_rotation_deg == 270) {
+    if (s_rotation_deg == 90 || s_rotation_deg == 270)
+    {
         s_disp_drv.hor_res = DISPLAY_HEIGHT; // swap when rotated 90/270
         s_disp_drv.ver_res = DISPLAY_WIDTH;
-    } else {
+    }
+    else
+    {
         s_disp_drv.hor_res = DISPLAY_WIDTH;
         s_disp_drv.ver_res = DISPLAY_HEIGHT;
     }
@@ -381,15 +427,15 @@ esp_err_t lvgl_driver_init(void)
         .callback = &lvgl_tick_cb,
         .arg = NULL,
         .dispatch_method = ESP_TIMER_TASK,
-        .name = "lv_tick"
-    };
+        .name = "lv_tick"};
     esp_timer_handle_t tick_timer;
     ESP_RETURN_ON_ERROR(esp_timer_create(&tick_args, &tick_timer), TAG, "esp_timer_create failed");
     ESP_RETURN_ON_ERROR(esp_timer_start_periodic(tick_timer, LVGL_TICK_PERIOD_MS * 1000), TAG, "esp_timer_start_periodic failed");
 
     // LVGL handler task
     BaseType_t ok = xTaskCreatePinnedToCore(lvgl_task, "lvgl", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, &s_lvgl_task, LVGL_TASK_CORE_ID);
-    if (ok != pdPASS) return ESP_ERR_NO_MEM;
+    if (ok != pdPASS)
+        return ESP_ERR_NO_MEM;
 
     // Touch init and LVGL input device
     ESP_RETURN_ON_ERROR(i2c_touch_init(), TAG, "i2c_touch_init failed");
@@ -406,13 +452,16 @@ esp_err_t lvgl_driver_init(void)
 
 esp_err_t display_set_rotation(int rotation_deg)
 {
-    if (rotation_deg != 0 && rotation_deg != 90 && rotation_deg != 180 && rotation_deg != 270) {
+    if (rotation_deg != 0 && rotation_deg != 90 && rotation_deg != 180 && rotation_deg != 270)
+    {
         return ESP_ERR_INVALID_ARG;
     }
-    if (!s_lvgl_inited) {
+    if (!s_lvgl_inited)
+    {
         return ESP_ERR_INVALID_STATE;
     }
-    if (rotation_deg == s_rotation_deg) {
+    if (rotation_deg == s_rotation_deg)
+    {
         return ESP_OK; // no-op
     }
 
@@ -422,17 +471,21 @@ esp_err_t display_set_rotation(int rotation_deg)
     uint8_t madctl = compute_madctl(s_rotation_deg);
     panel_write_cmd1(0x36, madctl);
 
-    if (s_rotation_deg == 90 || s_rotation_deg == 270) {
+    if (s_rotation_deg == 90 || s_rotation_deg == 270)
+    {
         s_disp_drv.hor_res = DISPLAY_HEIGHT;
         s_disp_drv.ver_res = DISPLAY_WIDTH;
-    } else {
+    }
+    else
+    {
         s_disp_drv.hor_res = DISPLAY_WIDTH;
         s_disp_drv.ver_res = DISPLAY_HEIGHT;
     }
     lv_disp_drv_update(s_disp, &s_disp_drv);
     lv_obj_invalidate(lv_scr_act());
 
-    if (locked) lvgl_unlock();
+    if (locked)
+        lvgl_unlock();
 
     ESP_LOGI(TAG, "Display rotation changed to %d degrees (MADCTL=0x%02X)", s_rotation_deg, (unsigned)madctl);
     return ESP_OK;
@@ -440,11 +493,13 @@ esp_err_t display_set_rotation(int rotation_deg)
 
 bool lvgl_lock(uint32_t timeout_ms)
 {
-    if (!s_lvgl_mutex) return false;
+    if (!s_lvgl_mutex)
+        return false;
     return xSemaphoreTake(s_lvgl_mutex, pdMS_TO_TICKS(timeout_ms)) == pdTRUE;
 }
 
 void lvgl_unlock(void)
 {
-    if (s_lvgl_mutex) xSemaphoreGive(s_lvgl_mutex);
+    if (s_lvgl_mutex)
+        xSemaphoreGive(s_lvgl_mutex);
 }

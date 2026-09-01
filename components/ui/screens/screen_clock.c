@@ -8,8 +8,10 @@ static lv_obj_t *s_time_label = NULL;
 static lv_obj_t *s_date_label = NULL;
 static lv_obj_t *s_weather_label = NULL;
 
-static const char *s_weekday_kr[7] = {
-    "\xEC\x9D\xBC", "\xEC\x9B\x94", "\xED\x99\x94", "\xEC\x88\x98", "\xEB\xAA\xA9", "\xEA\xB8\x88", "\xED\x86\xA0" // 일 월 화 수 목 금 토
+// LVGL 기본 폰트(Montserrat)에 한글 글리프가 없어 영문 약어로 표기한다
+// (glyph dsc. not found 경고 방지 — USE_FONT_KOREAN 향후 과제 참고).
+static const char *s_weekday_en[7] = {
+    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
 static void clock_tick_cb(lv_timer_t *timer)
@@ -26,7 +28,7 @@ static void clock_tick_cb(lv_timer_t *timer)
     char dbuf[48];
     snprintf(dbuf, sizeof(dbuf), "%04d-%02d-%02d (%s)",
              tm_now.tm_year + 1900, tm_now.tm_mon + 1, tm_now.tm_mday,
-             s_weekday_kr[tm_now.tm_wday]);
+             s_weekday_en[tm_now.tm_wday]);
     lv_label_set_text(s_date_label, dbuf);
 }
 

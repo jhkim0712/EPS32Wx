@@ -75,11 +75,11 @@ static void rescan_files(void)
 static void show_index(int index, int skip_depth)
 {
     if (s_file_count <= 0) {
-        show_placeholder("SD \xEC\xB9\xB4\xEB\x93\x9C\xEC\x97\x90 /photos \xEC\x82\xAC\xEC\xA7\x84\xEC\x9D\xB4 \xEC\x97\x86\xEC\x8A\xB5\xEB\x8B\x88\xEB\x8B\xA4"); // "SD 카드에 /photos 사진이 없습니다"
+        show_placeholder("No photos in SD:/photos");
         return;
     }
     if (skip_depth >= GALLERY_MAX_SKIPS) {
-        show_placeholder("\xEC\x9D\xBD\xEC\x9D\x84 \xEC\x88\x98 \xEC\x9E\x88\xEB\x8A\x94 \xEC\x82\xAC\xEC\xA7\x84\xEC\x9D\xB4 \xEC\x97\x86\xEC\x8A\xB5\xEB\x8B\x88\xEB\x8B\xA4"); // "읽을 수 있는 사진이 없습니다"
+        show_placeholder("No readable photos found");
         return;
     }
 

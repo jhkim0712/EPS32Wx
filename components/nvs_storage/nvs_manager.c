@@ -13,28 +13,38 @@ static const char *TAG = LOG_TAG_NVS;
 // Helper: open namespace
 static esp_err_t nvs_open_ns(nvs_handle_t *out_handle, nvs_open_mode_t mode)
 {
-    if (!out_handle) return ESP_ERR_INVALID_ARG;
+    if (!out_handle)
+        return ESP_ERR_INVALID_ARG;
     return nvs_open(NVS_NAMESPACE, mode, out_handle);
 }
 
 // Helper: get string with safe copy into buffer
 static esp_err_t nvs_read_string(const char *key, char *out, size_t out_len)
 {
-    if (!key || !out || out_len == 0) return ESP_ERR_INVALID_ARG;
+    if (!key || !out || out_len == 0)
+        return ESP_ERR_INVALID_ARG;
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READONLY);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
 
     size_t required = 0;
     err = nvs_get_str(h, key, NULL, &required);
-    if (err == ESP_OK && required > 0) {
+    if (err == ESP_OK && required > 0)
+    {
         // required includes trailing null
-        if (required > out_len) {
+        if (required > out_len)
+        {
             // read into temp then truncate
-            char *tmp = (char*)malloc(required);
-            if (!tmp) { nvs_close(h); return ESP_ERR_NO_MEM; }
+            char *tmp = (char *)malloc(required);
+            if (!tmp)
+            {
+                nvs_close(h);
+                return ESP_ERR_NO_MEM;
+            }
             esp_err_t err2 = nvs_get_str(h, key, tmp, &required);
-            if (err2 == ESP_OK) {
+            if (err2 == ESP_OK)
+            {
                 // truncate safely
                 strncpy(out, tmp, out_len - 1);
                 out[out_len - 1] = '\0';
@@ -42,7 +52,9 @@ static esp_err_t nvs_read_string(const char *key, char *out, size_t out_len)
             free(tmp);
             nvs_close(h);
             return err2;
-        } else {
+        }
+        else
+        {
             err = nvs_get_str(h, key, out, &required);
             nvs_close(h);
             return err;
@@ -59,16 +71,19 @@ esp_err_t nvs_manager_init(void)
     // This function can be used to ensure namespace accessibility.
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err == ESP_OK) nvs_close(h);
-    if (err == ESP_OK) {
+    if (err == ESP_OK)
+        nvs_close(h);
+    if (err == ESP_OK)
+    {
         ESP_LOGI(TAG, "NVS namespace '%s' ready", NVS_NAMESPACE);
     }
     return err;
 }
 
-esp_err_t nvs_manager_load_config(app_config_t* config)
+esp_err_t nvs_manager_load_config(app_config_t *config)
 {
-    if (!config) return ESP_ERR_INVALID_ARG;
+    if (!config)
+        return ESP_ERR_INVALID_ARG;
     memset(config, 0, sizeof(*config));
 
     // Defaults
@@ -98,33 +113,51 @@ esp_err_t nvs_manager_load_config(app_config_t* config)
 
     // 숫자/불리언 값들은 핸들 하나로 한 번에 읽는다
     nvs_handle_t h;
-    if (nvs_open_ns(&h, NVS_READONLY) == ESP_OK) {
+    if (nvs_open_ns(&h, NVS_READONLY) == ESP_OK)
+    {
         uint8_t u8v;
         uint16_t u16v;
         uint32_t u32v;
 
-        if (nvs_get_u8(h, NVS_KEY_WIFI_CONFIGURED, &u8v) == ESP_OK) {
+        if (nvs_get_u8(h, NVS_KEY_WIFI_CONFIGURED, &u8v) == ESP_OK)
+        {
             config->wifi.configured = (u8v != 0);
-        } else {
+        }
+        else
+        {
             config->wifi.configured = (config->wifi.ssid[0] != '\0'); // SSID 존재로 추론
         }
 
-        if (nvs_get_u8(h, NVS_KEY_FIRST_BOOT, &u8v) == ESP_OK) config->first_boot = (u8v != 0);
-        if (nvs_get_u32(h, NVS_KEY_UPDATE_INTERVAL, &u32v) == ESP_OK && u32v > 0) config->update_interval = u32v;
+        if (nvs_get_u8(h, NVS_KEY_FIRST_BOOT, &u8v) == ESP_OK)
+            config->first_boot = (u8v != 0);
+        if (nvs_get_u32(h, NVS_KEY_UPDATE_INTERVAL, &u32v) == ESP_OK && u32v > 0)
+            config->update_interval = u32v;
 
-        if (nvs_get_u8(h, NVS_KEY_BRIGHTNESS, &u8v) == ESP_OK) config->brightness_percent = u8v;
-        if (nvs_get_u16(h, NVS_KEY_ROTATION, &u16v) == ESP_OK) config->display_rotation_deg = u16v;
-        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_EN, &u8v) == ESP_OK) config->night_dim_enabled = (u8v != 0);
-        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_START, &u8v) == ESP_OK) config->night_dim_start_hour = u8v;
-        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_END, &u8v) == ESP_OK) config->night_dim_end_hour = u8v;
-        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_BRIGHT, &u8v) == ESP_OK) config->night_dim_brightness_percent = u8v;
-        if (nvs_get_u8(h, NVS_KEY_WEB_AUTH_EN, &u8v) == ESP_OK) config->web_auth_enabled = (u8v != 0);
-        if (nvs_get_u8(h, NVS_KEY_SLIDESHOW_EN, &u8v) == ESP_OK) config->slideshow_enabled = (u8v != 0);
-        if (nvs_get_u16(h, NVS_KEY_SLIDESHOW_INT, &u16v) == ESP_OK && u16v > 0) config->slideshow_interval_sec = u16v;
-        if (nvs_get_u8(h, NVS_KEY_OTA_AUTO_CHECK, &u8v) == ESP_OK) config->ota_auto_check = (u8v != 0);
+        if (nvs_get_u8(h, NVS_KEY_BRIGHTNESS, &u8v) == ESP_OK)
+            config->brightness_percent = u8v;
+        if (nvs_get_u16(h, NVS_KEY_ROTATION, &u16v) == ESP_OK)
+            config->display_rotation_deg = u16v;
+        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_EN, &u8v) == ESP_OK)
+            config->night_dim_enabled = (u8v != 0);
+        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_START, &u8v) == ESP_OK)
+            config->night_dim_start_hour = u8v;
+        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_END, &u8v) == ESP_OK)
+            config->night_dim_end_hour = u8v;
+        if (nvs_get_u8(h, NVS_KEY_NIGHT_DIM_BRIGHT, &u8v) == ESP_OK)
+            config->night_dim_brightness_percent = u8v;
+        if (nvs_get_u8(h, NVS_KEY_WEB_AUTH_EN, &u8v) == ESP_OK)
+            config->web_auth_enabled = (u8v != 0);
+        if (nvs_get_u8(h, NVS_KEY_SLIDESHOW_EN, &u8v) == ESP_OK)
+            config->slideshow_enabled = (u8v != 0);
+        if (nvs_get_u16(h, NVS_KEY_SLIDESHOW_INT, &u16v) == ESP_OK && u16v > 0)
+            config->slideshow_interval_sec = u16v;
+        if (nvs_get_u8(h, NVS_KEY_OTA_AUTO_CHECK, &u8v) == ESP_OK)
+            config->ota_auto_check = (u8v != 0);
 
         nvs_close(h);
-    } else {
+    }
+    else
+    {
         // 네임스페이스가 아직 없음(최초 부팅) — SSID 유무로만 추론
         config->wifi.configured = (config->wifi.ssid[0] != '\0');
     }
@@ -132,13 +165,15 @@ esp_err_t nvs_manager_load_config(app_config_t* config)
     return ESP_OK;
 }
 
-esp_err_t nvs_manager_save_config(const app_config_t* config)
+esp_err_t nvs_manager_save_config(const app_config_t *config)
 {
-    if (!config) return ESP_ERR_INVALID_ARG;
+    if (!config)
+        return ESP_ERR_INVALID_ARG;
 
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
 
     // Write WiFi settings
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WIFI_SSID, config->wifi.ssid));
@@ -178,7 +213,8 @@ esp_err_t nvs_manager_save_brightness(uint8_t percent)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_BRIGHTNESS, percent));
     err = nvs_commit(h);
     nvs_close(h);
@@ -189,7 +225,8 @@ esp_err_t nvs_manager_save_rotation(uint16_t degrees)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u16(h, NVS_KEY_ROTATION, degrees));
     err = nvs_commit(h);
     nvs_close(h);
@@ -198,10 +235,12 @@ esp_err_t nvs_manager_save_rotation(uint16_t degrees)
 
 esp_err_t nvs_manager_save_timezone(const char *timezone_posix)
 {
-    if (!timezone_posix) return ESP_ERR_INVALID_ARG;
+    if (!timezone_posix)
+        return ESP_ERR_INVALID_ARG;
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_TIMEZONE, timezone_posix));
     err = nvs_commit(h);
     nvs_close(h);
@@ -212,7 +251,8 @@ esp_err_t nvs_manager_save_night_dim(bool enabled, uint8_t start_hour, uint8_t e
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_NIGHT_DIM_EN, enabled ? 1 : 0));
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_NIGHT_DIM_START, start_hour));
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_NIGHT_DIM_END, end_hour));
@@ -226,7 +266,8 @@ esp_err_t nvs_manager_save_slideshow(bool enabled, uint16_t interval_sec)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_SLIDESHOW_EN, enabled ? 1 : 0));
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u16(h, NVS_KEY_SLIDESHOW_INT, interval_sec));
     err = nvs_commit(h);
@@ -236,10 +277,12 @@ esp_err_t nvs_manager_save_slideshow(bool enabled, uint16_t interval_sec)
 
 esp_err_t nvs_manager_save_ota_manifest_url(const char *url)
 {
-    if (!url) return ESP_ERR_INVALID_ARG;
+    if (!url)
+        return ESP_ERR_INVALID_ARG;
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_OTA_MANIFEST_URL, url));
     err = nvs_commit(h);
     nvs_close(h);
@@ -250,7 +293,8 @@ esp_err_t nvs_manager_save_ota_auto_check(bool enabled)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_OTA_AUTO_CHECK, enabled ? 1 : 0));
     err = nvs_commit(h);
     nvs_close(h);
@@ -261,26 +305,34 @@ esp_err_t nvs_manager_save_web_auth(bool enabled, const char *user, const char *
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_WEB_AUTH_EN, enabled ? 1 : 0));
-    if (user) ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WEB_AUTH_USER, user));
-    if (pass) ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WEB_AUTH_PASS, pass));
+    if (user)
+        ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WEB_AUTH_USER, user));
+    if (pass)
+        ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WEB_AUTH_PASS, pass));
     err = nvs_commit(h);
     nvs_close(h);
     return err;
 }
 
-esp_err_t nvs_manager_save_wifi_config(const char* ssid, const char* password)
+esp_err_t nvs_manager_save_wifi_config(const char *ssid, const char *password)
 {
-    if (!ssid) return ESP_ERR_INVALID_ARG;
+    if (!ssid)
+        return ESP_ERR_INVALID_ARG;
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
 
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WIFI_SSID, ssid));
-    if (password) {
+    if (password)
+    {
         ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WIFI_PASS, password));
-    } else {
+    }
+    else
+    {
         // store empty password
         ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_WIFI_PASS, ""));
     }
@@ -291,24 +343,28 @@ esp_err_t nvs_manager_save_wifi_config(const char* ssid, const char* password)
     return err;
 }
 
-esp_err_t nvs_manager_save_api_key(const char* api_key)
+esp_err_t nvs_manager_save_api_key(const char *api_key)
 {
-    if (!api_key) return ESP_ERR_INVALID_ARG;
+    if (!api_key)
+        return ESP_ERR_INVALID_ARG;
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_API_KEY, api_key));
     err = nvs_commit(h);
     nvs_close(h);
     return err;
 }
 
-esp_err_t nvs_manager_save_city_name(const char* city_name)
+esp_err_t nvs_manager_save_city_name(const char *city_name)
 {
-    if (!city_name) return ESP_ERR_INVALID_ARG;
+    if (!city_name)
+        return ESP_ERR_INVALID_ARG;
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_str(h, NVS_KEY_CITY_NAME, city_name));
     err = nvs_commit(h);
     nvs_close(h);
@@ -319,7 +375,8 @@ esp_err_t nvs_manager_set_first_boot(bool first_boot)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_set_u8(h, NVS_KEY_FIRST_BOOT, first_boot ? 1 : 0));
     err = nvs_commit(h);
     nvs_close(h);
@@ -330,13 +387,16 @@ esp_err_t nvs_manager_clear_wifi_config(void)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
 
     // 키가 아직 없을 수 있으므로 ESP_ERR_NVS_NOT_FOUND는 무시한다
     esp_err_t e1 = nvs_erase_key(h, NVS_KEY_WIFI_SSID);
     esp_err_t e2 = nvs_erase_key(h, NVS_KEY_WIFI_PASS);
     esp_err_t e3 = nvs_erase_key(h, NVS_KEY_WIFI_CONFIGURED);
-    (void)e1; (void)e2; (void)e3;
+    (void)e1;
+    (void)e2;
+    (void)e3;
 
     err = nvs_commit(h);
     nvs_close(h);
@@ -347,9 +407,11 @@ esp_err_t nvs_manager_erase_all(void)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open_ns(&h, NVS_READWRITE);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK)
+        return err;
     err = nvs_erase_all(h);
-    if (err == ESP_OK) err = nvs_commit(h);
+    if (err == ESP_OK)
+        err = nvs_commit(h);
     nvs_close(h);
     return err;
 }
@@ -357,14 +419,15 @@ esp_err_t nvs_manager_erase_all(void)
 // ---- Convenience helpers used by other modules ----
 
 // Expose a simple getter to align with existing call sites
-esp_err_t nvs_get_string(const char* key, char* out, size_t out_len)
+esp_err_t nvs_get_string(const char *key, char *out, size_t out_len)
 {
     return nvs_read_string(key, out, out_len);
 }
 
-esp_err_t nvs_get_wifi_config(wifi_config_t* wifi_config)
+esp_err_t nvs_get_wifi_config(wifi_config_t *wifi_config)
 {
-    if (!wifi_config) return ESP_ERR_INVALID_ARG;
+    if (!wifi_config)
+        return ESP_ERR_INVALID_ARG;
     memset(wifi_config, 0, sizeof(*wifi_config));
 
     char ssid[WIFI_SSID_MAX_LEN + 1] = {0};
@@ -373,15 +436,19 @@ esp_err_t nvs_get_wifi_config(wifi_config_t* wifi_config)
     esp_err_t err_ssid = nvs_read_string(NVS_KEY_WIFI_SSID, ssid, sizeof(ssid));
     esp_err_t err_pass = nvs_read_string(NVS_KEY_WIFI_PASS, pass, sizeof(pass));
 
-    if (err_ssid != ESP_OK) {
+    if (err_ssid != ESP_OK)
+    {
         return err_ssid; // SSID is required
     }
 
     // Copy into wifi_config_t
-    strncpy((char*)wifi_config->sta.ssid, ssid, sizeof(wifi_config->sta.ssid) - 1);
-    if (err_pass == ESP_OK) {
-        strncpy((char*)wifi_config->sta.password, pass, sizeof(wifi_config->sta.password) - 1);
-    } else {
+    strncpy((char *)wifi_config->sta.ssid, ssid, sizeof(wifi_config->sta.ssid) - 1);
+    if (err_pass == ESP_OK)
+    {
+        strncpy((char *)wifi_config->sta.password, pass, sizeof(wifi_config->sta.password) - 1);
+    }
+    else
+    {
         wifi_config->sta.password[0] = '\0';
     }
 
