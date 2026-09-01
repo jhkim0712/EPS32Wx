@@ -55,58 +55,40 @@ ESP32 기반의 모듈화된 날씨 스테이션 프로젝트입니다. WiFi 설
 
 ## 📁 프로젝트 구조
 
+이 프로젝트는 ESP-IDF 표준 컴포넌트 형식을 따릅니다. `main/`은 각 컴포넌트를 초기화 순서대로
+호출하는 얇은 오케스트레이터일 뿐이고, 실제 기능은 모두 `components/` 아래 독립 컴포넌트로 분리되어
+있습니다 (각 컴포넌트는 자체 `CMakeLists.txt`/`include/` 를 가지며 `idf_component_register()`로 등록됩니다).
+
 ```
 ESP32Wx/
-├── 📄 CMakeLists.txt          # ESP-IDF 프로젝트 루트 설정
-├── 📄 partitions.csv          # 메모리 파티션 테이블 (16MB Flash)
+├── 📄 CMakeLists.txt          # ESP-IDF 프로젝트 루트 설정 (EXTRA_COMPONENT_DIRS=components)
+├── 📄 partitions.csv          # 메모리 파티션 테이블 (16MB Flash, A/B OTA)
 ├── 📄 README.md              # 프로젝트 문서 (이 파일)
-├── � sdkconfig.esp32s3       # ESP32-S3 SDK 설정
-├── �📂 docs/                   # 문서 및 이미지
+├── 📂 docs/                   # 문서 및 이미지
 │   └── 📂 images/
 │       ├── 📂 hardware/       # 하드웨어 연결 이미지
 │       └── 📂 ui/            # UI 스크린샷
-├── 📂 data/                   # 웹 파일 저장소
-│   └── 📄 index.html         # 설정 포털 웹페이지
-├── 📂 components/             # ESP-IDF 커스텀 컴포넌트
-│   └── 📂 lvgl/              # LVGL 8.3.11 그래픽 라이브러리
-│       ├── 📄 CMakeLists.txt # LVGL 컴포넌트 빌드 설정
-│       ├── 📄 lv_conf.h      # LVGL 설정 (권장: 16bpp, FreeRTOS OSAL)
-│       └── 📂 lvgl/          # LVGL 소스 코드 (v8.3.11)
-└── 📂 main/                   # 메인 애플리케이션 (ESP-IDF 표준)
-    ├── 📄 main.c             # 메인 애플리케이션 엔트리 포인트
-    ├── 📄 CMakeLists.txt     # 메인 컴포넌트 빌드 설정
-    ├── 📂 include/            # 헤더 파일 디렉토리 (ESP-IDF 표준)
-    │   ├── 📂 common/
-    │   │   ├── 📄 config.h       # 전역 설정 상수
-    │   │   └── 📄 types.h        # 공통 데이터 구조체
-    │   ├── 📂 network/
-    │   │   ├── 📄 wifi_manager.h    # WiFi 관리 인터페이스
-    │   │   └── 📄 config_portal.h   # 웹 포털 인터페이스
-    │   ├── 📂 storage/
-    │   │   ├── 📄 nvs_manager.h     # NVS 저장소 인터페이스
-    │   │   └── 📄 spiffs_manager.h  # SPIFFS 파일시스템 인터페이스
-    │   ├── 📂 ui/
-    │   │   ├── 📄 lvgl_driver.h     # LVGL 디스플레이 드라이버
-    │   │   └── � ui_app.h         # UI 애플리케이션 인터페이스
-    │   ├── 📂 weather/
-    │   │   ├── 📄 weather_interface.h    # 날씨 API 인터페이스
-    │   │   └── 📄 openweathermap_api.h   # OpenWeatherMap API
-    │   └── 📂 ota/
-    │       └── 📄 ota_manager.h        # OTA 업데이트 인터페이스
-    ├── 📂 network/
-    │   ├── 📄 wifi_manager.c    # WiFi 연결 및 관리
-    │   └── 📄 config_portal.c   # HTTP 웹 서버 및 API
-    ├── 📂 storage/
-    │   ├── 📄 nvs_manager.c     # NVS 읽기/쓰기 구현
-    │   └── 📄 spiffs_manager.c  # SPIFFS 파일 관리
-    ├── 📂 ui/                # LVGL UI 구현
-    │   ├── 📄 lvgl_driver.c  # 디스플레이 드라이버 (ST7796)
-    │   └── 📄 ui_app.c       # UI 애플리케이션
-    ├── 📂 weather/           # 날씨 API 처리
-    │   ├── 📄 weather_interface.c    # 날씨 데이터 처리
-    │   └── 📄 openweathermap_api.c   # OpenWeatherMap API 구현
-    └── 📂 ota/              # OTA 업데이트 관리
-        └── 📄 ota_manager.c     # OTA 업데이트 구현
+├── 📂 data/                   # 웹 설정 포털 정적 파일 (SPIFFS로 이미지화)
+│   ├── 📄 index.html
+│   ├── 📂 css/
+│   └── 📂 js/
+├── 📂 components/             # ESP-IDF 컴포넌트들
+│   ├── 📂 cjson/              # cJSON 라이브러리
+│   ├── 📂 lvgl/               # LVGL 8.3.11 그래픽 라이브러리
+│   ├── 📂 app_config/         # 공유 상수/설정/타입 (헤더 전용)
+│   ├── 📂 sys_util/           # 공용 유틸리티 (지연 재부팅 등)
+│   ├── 📂 nvs_storage/        # NVS 설정 저장소
+│   ├── 📂 spiffs_storage/     # SPIFFS 파일시스템 (웹 파일)
+│   ├── 📂 sd_storage/         # SD 카드 (SDSPI+FATFS, 디지털 액자용)
+│   ├── 📂 display/            # LCD/LVGL 드라이버 + 백라이트 PWM
+│   ├── 📂 ui/                 # 온디바이스 화면 관리자 + 화면들
+│   ├── 📂 wifi_net/           # WiFi STA/AP 관리
+│   ├── 📂 webui/              # 웹 설정 포털 (HTTP 서버 + API)
+│   ├── 📂 weather/            # 날씨 데이터 처리
+│   └── 📂 ota_updater/        # GitHub 매니페스트 기반 OTA
+└── 📂 main/                   # 얇은 오케스트레이터 (ESP-IDF 표준)
+    ├── 📄 main.c             # app_main(): 각 컴포넌트 초기화/배선
+    └── 📄 CMakeLists.txt     # main 컴포넌트 빌드 설정 (PRIV_REQUIRES로 전체 컴포넌트 연결)
 ```
 
 ## 🔧 하드웨어 요구사항

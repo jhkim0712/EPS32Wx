@@ -1,0 +1,228 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+h3 {
+    color: #333;
+    margin: 24px 0 10px;
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+}
+.tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+}
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+}
+.tab-btn.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+}
+.tab-panel {
+    display: none;
+}
+.tab-panel.active {
+    display: block;
+}
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group.two-col {
+    display: flex;
+    gap: 12px;
+}
+.form-group.two-col > div {
+    flex: 1;
+}
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+.switch-label {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+input[type="text"], input[type="password"], input[type="range"], select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 15px;
+    width: 100%;
+    margin-top: 6px;
+}
+button:hover {
+    background-color: #0056b3;
+}
+button:disabled {
+    background-color: #aac6e8;
+    cursor: not-allowed;
+}
+.scan-btn {
+    background-color: #28a745;
+    margin-bottom: 10px;
+}
+.scan-btn:hover {
+    background-color: #218838;
+}
+.btn-row {
+    display: flex;
+    gap: 8px;
+}
+.btn-row button, .btn-row .chip {
+    width: auto;
+    flex: 1;
+    margin-top: 0;
+}
+.chip {
+    background-color: #e9ecef;
+    color: #333;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.chip.active {
+    background-color: #007bff;
+    color: white;
+}
+#wifiList {
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.wifi-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+.wifi-item:hover {
+    background-color: #f8f9fa;
+}
+.wifi-item:last-child {
+    border-bottom: none;
+}
+.signal-strength {
+    float: right;
+    color: #666;
+}
+.status {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+}
+.status.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.status.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+.loading {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+.hint {
+    color: #888;
+    font-size: 13px;
+    text-align: center;
+}
+small {
+    color: #666;
+}
+.card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+.status-row:last-child {
+    border-bottom: none;
+}
+.progress-bar {
+    background: #e9ecef;
+    border-radius: 6px;
+    height: 12px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+.progress-fill {
+    background: #007bff;
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s;
+}
+.file-list {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 8px 12px;
+}
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+.file-item:last-child {
+    border-bottom: none;
+}
