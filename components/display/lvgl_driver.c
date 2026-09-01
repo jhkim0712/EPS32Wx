@@ -343,6 +343,13 @@ esp_err_t lvgl_driver_init(void)
     ESP_RETURN_ON_ERROR(backlight_init(), TAG, "backlight init failed"); // 초기 밝기 0%(꺼짐)
     ESP_RETURN_ON_ERROR(lcd_reset_pulse(), TAG, "lcd reset failed");
     // i80 (8080) bus
+    // max_transfer_bytes는 esp_lcd가 내부 GDMA 디스크립터 링크 리스트를 미리
+    // 크기 계산해 할당하는 데 쓰인다. 실제 최대 플러시 크기와 정확히 같은 값을
+    // 주면 디스크립터 개수 산정의 경계값 반올림 때문에 "gdma_link_mount_buffers:
+    // no more space for buffer mounting" 에러가 날 수 있어(LVGL_BUFFER_LINES를
+    // 40->120으로 키우고 더블버퍼를 추가한 뒤 실기기에서 관찰됨), 한 디스크립터
+    // 블록(4KB) 이상 여유를 둔다.
+    size_t lvgl_max_flush_bytes = (size_t)DISPLAY_WIDTH * LVGL_BUFFER_LINES * sizeof(lv_color_t);
     esp_lcd_i80_bus_config_t bus_config = {
         .dc_gpio_num = LCD_RS_PIN,
         .wr_gpio_num = LCD_WR_PIN,
@@ -351,7 +358,7 @@ esp_err_t lvgl_driver_init(void)
             LCD_DB0_PIN, LCD_DB1_PIN, LCD_DB2_PIN, LCD_DB3_PIN,
             LCD_DB4_PIN, LCD_DB5_PIN, LCD_DB6_PIN, LCD_DB7_PIN},
         .bus_width = 8,
-        .max_transfer_bytes = DISPLAY_WIDTH * LVGL_BUFFER_LINES * sizeof(lv_color_t),
+        .max_transfer_bytes = lvgl_max_flush_bytes + 4096,
     };
     ESP_RETURN_ON_ERROR(esp_lcd_new_i80_bus(&bus_config, &s_i80_bus), TAG, "new_i80_bus failed");
 
